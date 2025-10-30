@@ -4,22 +4,23 @@ import com.scrim_pds.model.Scrim;
 import com.scrim_pds.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
+// import org.springframework.beans.factory.annotation.Qualifier; // <-- BORRADO
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
-import java.util.UUID; // <-- IMPORT AÑADIDO
+import java.util.UUID;
 
 @Service
 public class NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
+    // Los notifiers que usará este servicio
     private final Notifier emailNotifier;
-    // Podríamos inyectar otros notifiers (Push, Discord) aquí si los tuviéramos
-    // private final Notifier pushNotifier;
+    private final Notifier pushNotifier; // Podríamos usarlo aunque no esté implementado
+    private final Notifier discordNotifier; // Podríamos usarlo aunque no esté implementado
 
     // Formateador para fechas/horas en emails (puedes ajustar el estilo y Locale)
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
@@ -27,9 +28,13 @@ public class NotificationService {
             .withLocale(Locale.getDefault()); // Usa el locale del servidor (puedes forzar "es-AR" etc.)
 
 
-    // Inyectamos el EmailNotifier específico usando @Qualifier
-    public NotificationService(@Qualifier("emailNotifier") Notifier emailNotifier) {
-        this.emailNotifier = emailNotifier;
+    // --- CONSTRUCTOR MODIFICADO ---
+    // Inyectamos la Factory en lugar del Notifier específico
+    public NotificationService(NotifierFactory factory) {
+        // Usamos la factory para construir los notifiers que necesitamos
+        this.emailNotifier = factory.createEmailNotifier();
+        this.pushNotifier = factory.createPushNotifier();
+        this.discordNotifier = factory.createDiscordNotifier();
     }
 
     /**
@@ -48,7 +53,7 @@ public class NotificationService {
                         "Saludos,\nEl equipo de eScrim";
 
         logger.info("Intentando enviar email de verificación/bienvenida a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
         logResult("Verificación/Bienvenida", enviado, null, destinatario); // Usar helper
     }
 
@@ -85,7 +90,7 @@ public class NotificationService {
         );
 
         logger.info("Intentando enviar notificación de nuevo scrim a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
         logResult("Nuevo Scrim", enviado, scrim.getId(), destinatario); // Usar helper
     }
 
@@ -119,7 +124,7 @@ public class NotificationService {
         );
 
         logger.info("Intentando enviar notificación de Lobby Armado a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
         logResult("Lobby Armado", enviado, scrim.getId(), destinatario); // Usar helper
     }
 
@@ -147,11 +152,9 @@ public class NotificationService {
         );
 
         logger.info("Intentando enviar notificación de Scrim Confirmado a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
         logResult("Scrim Confirmado", enviado, scrim.getId(), destinatario); // Usar helper
     }
-
-    // --- NUEVOS MÉTODOS AÑADIDOS ---
 
     /**
      * Envía notificación de que el Scrim ha iniciado.
@@ -227,7 +230,6 @@ public class NotificationService {
     }
 
     // Método helper privado para loguear resultado del envío
-    // Asegurarse que UUID esté importado
     private void logResult(String notificationType, boolean success, UUID scrimId, String recipientEmail) {
         String scrimIdStr = scrimId != null ? scrimId.toString() : "N/A"; // Manejar posible null para bienvenida
         if (success) {

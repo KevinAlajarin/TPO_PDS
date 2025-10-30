@@ -19,5 +19,5 @@
   "rol" : "USER",
   "strikes" : 0,
   "cooldownHasta" : null,
-  "estadoVerificacion" : "VERIFICADO"
+  "estadoVerificacion" : "PENDIENTE"
 } ]

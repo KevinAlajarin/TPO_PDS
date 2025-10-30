@@ -1,19 +1,20 @@
 package com.scrim_pds.notification;
 
 import com.scrim_pds.adapter.EmailAdapter;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
+// import org.springframework.beans.factory.annotation.Qualifier; // <-- BORRADO
+// import org.springframework.stereotype.Component; // <-- BORRADO
 
 /**
  * Implementación de Notifier para emails (Diagrama).
+ * Esta clase YA NO es un @Component. Será instanciada por la NotifierFactory.
  */
-@Component
-@Qualifier("emailNotifier") // Para poder inyectar específicamente este Notifier
+// @Component // <-- BORRADO
+// @Qualifier("emailNotifier") // <-- BORRADO
 public class EmailNotifier implements Notifier {
 
     private final EmailAdapter emailAdapter;
 
-    // Inyectamos la implementación concreta de EmailAdapter (SendGridAdapter)
+    // El constructor sigue igual, la Factory lo llamará
     public EmailNotifier(EmailAdapter emailAdapter) {
         this.emailAdapter = emailAdapter;
     }
@@ -24,3 +25,4 @@ public class EmailNotifier implements Notifier {
         return emailAdapter.enviarEmail(destinatario, asunto, cuerpo);
     }
 }
+
