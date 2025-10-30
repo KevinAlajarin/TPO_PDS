@@ -8,7 +8,7 @@ public class Session {
     private UUID userId;
     private LocalDateTime expiresAt;
 
-    // Constructor sin argumentos para Jackson
+    // Constructor
     public Session() {
     }
 

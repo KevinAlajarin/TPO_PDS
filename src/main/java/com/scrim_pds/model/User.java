@@ -13,16 +13,16 @@ public class User {
     private String username;
     private String email;
     private String passwordHash;
-    private Map<String, String> rangoPorJuego; // Ej: {"Valorant": "Diamante", "LoL": "Oro"}
-    private List<String> rolesPreferidos; // Ej: ["Duelista", "Jungla"]
+    private Map<String, String> rangoPorJuego; 
+    private List<String> rolesPreferidos; 
     private String region;
     private PreferenciasUsuario preferencias;
-    private UserRole rol; // USER, ADMIN
+    private UserRole rol; 
     private int strikes;
     private LocalDateTime cooldownHasta;
-    private VerificationState estadoVerificacion; // PENDIENTE, VERIFICADO
+    private VerificationState estadoVerificacion; 
 
-    // Constructor sin argumentos para Jackson
+    // Constructor
     public User() {
     }
 

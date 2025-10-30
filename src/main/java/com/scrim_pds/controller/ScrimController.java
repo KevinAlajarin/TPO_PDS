@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 // --- Swagger Imports ---
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter; // Para parámetros
+import io.swagger.v3.oas.annotations.Parameter; // Para parametros
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +23,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement; // Para indicar token requerido
 import io.swagger.v3.oas.annotations.tags.Tag;
 // --- Fin Swagger Imports ---
-
 
 import java.io.IOException;
 import java.util.List;
@@ -176,9 +175,9 @@ public class ScrimController {
             @Valid @RequestBody List<EstadisticaRequest> estadisticas,
             @Parameter(hidden = true) @AuthUser User organizador
     ) throws IOException {
-        // Validar que la lista no esté vacía podría ser útil aquí o en el servicio
+        // Validar que la lista no este vacia podría ser útil aca o en el servicio
         if (estadisticas == null || estadisticas.isEmpty()) {
-             // Podríamos devolver un 400 Bad Request si la lista vacía no es válida
+             // Devolver un 400 Bad Request si la lista vacía no es válida
              return ResponseEntity.badRequest().build();
         }
         scrimService.guardarEstadisticas(scrimId, estadisticas, organizador);

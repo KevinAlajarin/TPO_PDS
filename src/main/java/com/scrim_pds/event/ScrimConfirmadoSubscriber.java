@@ -19,19 +19,17 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Suscriptor que escucha ScrimConfirmadoEvent y notifica al organizador y participantes.
- */
+// Suscriptor que escucha ScrimConfirmadoEvent y notifica al organizador y participantes.
+
 @Component
 public class ScrimConfirmadoSubscriber implements Subscriber<ScrimConfirmadoEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(ScrimConfirmadoSubscriber.class);
 
     private final DomainEventBus eventBus;
-    private final JsonPersistenceManager persistenceManager; // Para leer Postulaciones y Scrims
+    private final JsonPersistenceManager persistenceManager; 
     private final NotificationService notificationService;
-    private final UserService userService; // Para buscar usuarios por ID
-
+    private final UserService userService; 
     public ScrimConfirmadoSubscriber(DomainEventBus eventBus,
                                      JsonPersistenceManager persistenceManager,
                                      NotificationService notificationService,
@@ -58,14 +56,14 @@ public class ScrimConfirmadoSubscriber implements Subscriber<ScrimConfirmadoEven
         logger.info("Procesando ScrimConfirmadoEvent para Scrim ID: {}", scrimId);
 
         try {
-            // Releer el Scrim por si acaso (aunque el evento tiene los datos necesarios)
+            // Releer el Scrim por si acaso.
              List<Scrim> scrims = persistenceManager.readCollection("scrims.json", Scrim.class);
              Optional<Scrim> scrimOpt = scrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
              if (scrimOpt.isEmpty()) {
                  logger.error("No se encontró el Scrim {} al procesar ScrimConfirmadoEvent.", scrimId);
                  return;
              }
-             Scrim scrim = scrimOpt.get(); // Usar el scrim leído que tiene el estado CONFIRMADO
+             Scrim scrim = scrimOpt.get(); // Usar el scrim leido que tiene el estado CONFIRMADO.
 
             // 1. Notificar al Organizador
             Optional<User> organizadorOpt = userService.findUserById(event.organizadorId());
@@ -110,13 +108,11 @@ public class ScrimConfirmadoSubscriber implements Subscriber<ScrimConfirmadoEven
         }
     }
 
-    /**
-     * Verifica si un usuario desea recibir notificaciones por un canal específico.
-     * (Simplificado: asume que la preferencia 'alertasScrim' cubre este evento)
-     */
+    // Verifica si un usuario desea recibir notificaciones por un canal especifico.
+
     private boolean shouldNotify(User user, CanalNotificacion canal) {
         if (user.getPreferencias() == null) return false;
-        // Podríamos usar 'alertasPostulacion' o 'alertasScrim' dependiendo de la granularidad deseada
+        // Podemos usar 'alertasPostulacion' o 'alertasScrim' dependiendo de la granularidad deseada
         return user.getPreferencias().isAlertasScrim() &&
                user.getPreferencias().getCanalesNotificacion() != null &&
                user.getPreferencias().getCanalesNotificacion().contains(canal.name());

@@ -8,10 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-/**
- * Configuración de Jackson (el parser de JSON).
- * Versión Manual y Explícita.
- */
+// Configuración de Jackson (el parser de JSON).
+
 @Configuration
 public class JacksonConfig {
 
@@ -20,26 +18,26 @@ public class JacksonConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
 
-        // 1. Módulo para Fechas (LocalDateTime, etc.)
+        // 1. Modulo para Fechas (LocalDateTime, etc.)
         mapper.registerModule(new JavaTimeModule());
         
-        // 2. No escribir fechas como números (Timestamps)
+        // 2. No escribir fechas como numeros (Timestamps)
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         
         // 3. Escribir JSON bonito (Indentado)
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
 
-        // 4. --- LA CLAVE QUE FALTABA EN ETAPA 1 ---
+        // 4. 
         // Habilita la LECTURA (Deserialización) de Enums a partir de su nombre (String)
         // Esto convierte "FORMATO_5V5" (JSON) -> Formato.FORMATO_5V5 (Java)
         mapper.enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING); 
             
-        // 5. --- LA OTRA CLAVE ---
-        // Habilita la ESCRITURA (Serialización) de Enums a su nombre (String)
+        // 5.
+        // Habilita la ESCRITURA (Serializacion) de Enums a su nombre (String)
         // Esto convierte Formato.FORMATO_5V5 (Java) -> "FORMATO_5V5" (JSON)
         mapper.enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING); 
 
-        // 6. (Buena práctica) No fallar si el JSON tiene campos extra que el DTO no tiene
+        // 6. (Buena practica) No fallar si el JSON tiene campos extra que el DTO no tiene
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
         return mapper;

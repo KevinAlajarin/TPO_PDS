@@ -5,8 +5,8 @@ import com.scrim_pds.model.Scrim;
 import com.scrim_pds.model.User;
 import com.scrim_pds.model.enums.CanalNotificacion;
 import com.scrim_pds.notification.NotificationService;
-import com.scrim_pds.persistence.JsonPersistenceManager; // Usaremos este directamente por simplicidad
-import jakarta.annotation.PostConstruct; // Para suscribirse al inicio
+import com.scrim_pds.persistence.JsonPersistenceManager; 
+import jakarta.annotation.PostConstruct; 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,17 +14,16 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Suscriptor que escucha ScrimCreatedEvent y notifica a usuarios con preferencias coincidentes.
- */
+// Suscriptor que escucha ScrimCreatedEvent y notifica a usuarios con preferencias coincidentes.
+
 @Component
 public class ScrimMatchingSubscriber implements Subscriber<ScrimCreatedEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(ScrimMatchingSubscriber.class);
 
     private final DomainEventBus eventBus;
-    private final JsonPersistenceManager persistenceManager; // Para leer usuarios
-    private final NotificationService notificationService; // Para enviar notificaciones
+    private final JsonPersistenceManager persistenceManager; 
+    private final NotificationService notificationService; 
 
     public ScrimMatchingSubscriber(DomainEventBus eventBus,
                                    JsonPersistenceManager persistenceManager,
@@ -34,7 +33,6 @@ public class ScrimMatchingSubscriber implements Subscriber<ScrimCreatedEvent> {
         this.notificationService = notificationService;
     }
 
-    // Se suscribe al bus cuando el bean es creado
     @PostConstruct
     public void subscribeToEvents() {
         eventBus.subscribe(this);
@@ -42,7 +40,7 @@ public class ScrimMatchingSubscriber implements Subscriber<ScrimCreatedEvent> {
 
     @Override
     public Class<ScrimCreatedEvent> listensTo() {
-        return ScrimCreatedEvent.class; // Escucha específicamente ScrimCreatedEvent
+        return ScrimCreatedEvent.class; 
     }
 
     @Override
@@ -71,11 +69,10 @@ public class ScrimMatchingSubscriber implements Subscriber<ScrimCreatedEvent> {
                     if (prefs.getCanalesNotificacion() != null &&
                         prefs.getCanalesNotificacion().contains(CanalNotificacion.EMAIL.name())) {
 
-                        // Enviar notificación (el NotificationService se encargará de llamar al EmailNotifier)
+                        // Enviar notificacion (el NotificationService se encargara de llamar al EmailNotifier)
                         notificationService.sendNewScrimNotification(user, newScrim);
                         notifiedCount++;
                     }
-                    // Aquí podríamos añadir lógica para PUSH o DISCORD si tuviéramos esos notifiers
                 }
             }
             logger.info("Notificación de nuevo scrim enviada a {} usuarios.", notifiedCount);
@@ -87,12 +84,10 @@ public class ScrimMatchingSubscriber implements Subscriber<ScrimCreatedEvent> {
         }
     }
 
-    /**
-     * Verifica si un Scrim coincide con las preferencias de búsqueda de un usuario.
-     * Implementación simple basada en coincidencias de String (ignora rangos complejos).
-     */
+    // Verifica si un Scrim coincide con las preferencias de búsqueda de un usuario.
+
     private boolean matchesPreferences(Scrim scrim, PreferenciasUsuario prefs) {
-        boolean match = true; // Empieza asumiendo que coincide
+        boolean match = true; 
 
         // Comprobar juego (si el usuario tiene preferencia)
         if (prefs.getBusquedaJuegoPorDefecto() != null && !prefs.getBusquedaJuegoPorDefecto().isEmpty()) {
@@ -101,35 +96,29 @@ public class ScrimMatchingSubscriber implements Subscriber<ScrimCreatedEvent> {
             }
         }
 
-        // Comprobar región (si el usuario tiene preferencia y coincide)
+        // Comprobar region (si el usuario tiene preferencia y coincide)
         if (match && prefs.getBusquedaRegionPorDefecto() != null && !prefs.getBusquedaRegionPorDefecto().isEmpty()) {
             if (!scrim.getRegion().equalsIgnoreCase(prefs.getBusquedaRegionPorDefecto())) {
-                match = false; // No coincide la región
+                match = false; // No coincide la region
             }
         }
 
-        // Comprobar rangos (lógica MUY simplificada: ¿está el rango del scrim DENTRO del rango preferido del usuario?)
-        // TODO: Implementar lógica de comparación de rangos real.
-        // Esta versión simple solo notifica si los rangos son exactamente iguales, lo cual es poco útil.
-        // Una mejor aproximación (aún simple):
+        // Comprobar rangos
         boolean rangoMatch = true; // Asumir que coincide si no hay preferencias de rango
         if (prefs.getBusquedaRangoMinPorDefecto() != null && !prefs.getBusquedaRangoMinPorDefecto().isEmpty() &&
             prefs.getBusquedaRangoMaxPorDefecto() != null && !prefs.getBusquedaRangoMaxPorDefecto().isEmpty())
         {
-             // Simplificación extrema: ¿El rango mínimo del scrim es igual al mínimo del usuario Y el máximo igual al máximo?
              rangoMatch = scrim.getRangoMin().equalsIgnoreCase(prefs.getBusquedaRangoMinPorDefecto()) &&
                           scrim.getRangoMax().equalsIgnoreCase(prefs.getBusquedaRangoMaxPorDefecto());
-             // Una lógica ligeramente mejor sería comprobar si el rango [scrimMin, scrimMax] se solapa con [prefMin, prefMax]
         }
         if (!rangoMatch) {
             match = false;
         }
 
-
-        // Podríamos añadir más filtros (formato, modalidad, etc.) si estuvieran en las preferencias
+        // Aca podemos agregar mas filtros (modalidad, formato, etc)
 
         if (match) {
-             logger.debug("Scrim {} coincide con preferencias de usuario {}", scrim.getId(), prefs); // Log si coincide
+             logger.debug("Scrim {} coincide con preferencias de usuario {}", scrim.getId(), prefs); 
         }
         return match;
     }

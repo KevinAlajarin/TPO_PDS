@@ -31,5 +31,5 @@
   "descripcion" : "Scrim de práctica para torneo",
   "cupo" : 2,
   "matchmakingStrategyType" : "BY_MMR",
-  "recordatorioEnviado" : true
+  "recordatorioEnviado" : false
 } ]

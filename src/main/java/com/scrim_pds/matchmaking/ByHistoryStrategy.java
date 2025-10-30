@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class ByHistoryStrategy implements MatchmakingStrategy {
 
     // private final UserService userService;
-    // private final ReportService reportService; // Asumiendo que existe
+    // private final ReportService reportService; 
 
     // public ByHistoryStrategy(UserService userService, ReportService reportService) {
     //     this.userService = userService;
@@ -26,14 +26,15 @@ public class ByHistoryStrategy implements MatchmakingStrategy {
     @Override
     public List<User> seleccionar(List<Postulacion> candidates, Scrim scrim) {
         System.out.println("[STRATEGY] Executing ByHistoryStrategy (simulated)...");
-        // TODO: Implementar lógica real de filtrado basada en strikes, cooldown o reportes.
+
+        // TODO: Implementar logica real de filtrado basada en strikes, cooldown o reportes.
         // 1. Obtener los User correspondientes a los `candidates`.
         // 2. Filtrar usuarios que tengan `strikes` > X o `cooldownHasta` > now().
         // 3. (Opcional) Consultar `reportService` para ver si tienen reportes graves recientes.
         // 4. Seleccionar entre los candidatos "limpios".
         // 5. Devolver la lista de User.
 
-        // Simulación
+        // Simulacion
         return Collections.emptyList();
     }
 }

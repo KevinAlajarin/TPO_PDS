@@ -1,6 +1,6 @@
 package com.scrim_pds.persistence;
 
-import com.fasterxml.jackson.databind.ObjectMapper; // No necesitas TypeReference aquí
+import com.fasterxml.jackson.databind.ObjectMapper; 
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,10 +22,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-/**
- * Gestiona la persistencia de colecciones de objetos en archivos JSON.
- * Proporciona concurrencia (locking por archivo) y escrituras atómicas.
- */
+ // Gestiona la persistencia de colecciones de objetos en archivos JSON.
+
 @Component
 public class JsonPersistenceManager {
 
@@ -34,10 +32,8 @@ public class JsonPersistenceManager {
     private final ObjectMapper objectMapper;
     private final Path dataDirectory;
 
-    // Un mapa de locks, uno para cada archivo JSON, para manejar concurrencia
     private final Map<String, ReentrantReadWriteLock> locks = new ConcurrentHashMap<>();
 
-    // --- NUEVO ---
     // Lista de todos los archivos JSON que usará la aplicación
     private static final List<String> REQUIRED_FILES = List.of(
             "users.json",
@@ -46,7 +42,6 @@ public class JsonPersistenceManager {
             "postulaciones.json",
             "estadisticas.json",
             "verifications.json"
-            // Añade aquí futuros archivos si los necesitas
     );
 
     public JsonPersistenceManager(ObjectMapper objectMapper, @Value("${data.directory}") String dataDirPath) {
@@ -54,10 +49,6 @@ public class JsonPersistenceManager {
         this.dataDirectory = Paths.get(dataDirPath);
     }
 
-    // --- MÉTODO INIT MODIFICADO ---
-    /**
-     * Se asegura de que el directorio 'data/' y TODOS los archivos JSON requeridos existan al iniciar.
-     */
     @PostConstruct
     public void init() {
         try {
@@ -75,7 +66,6 @@ public class JsonPersistenceManager {
                 if (Files.notExists(filePath)) {
                     logger.warn("Archivo {} no encontrado. Creando archivo vacío.", fileName);
                     // Usamos writeCollection para crearlo de forma segura (con lock)
-                    // No hay riesgo de deadlock aquí porque @PostConstruct se ejecuta una sola vez al inicio.
                     writeCollection(fileName, new ArrayList<>());
                     logger.info("Archivo {} creado exitosamente.", fileName);
                 }
@@ -91,16 +81,10 @@ public class JsonPersistenceManager {
         }
     }
 
-    /**
-     * Obtiene el lock para un nombre de archivo, creándolo si no existe.
-     */
     private ReentrantReadWriteLock getLock(String fileName) {
         return locks.computeIfAbsent(fileName, k -> new ReentrantReadWriteLock());
     }
 
-    /**
-     * Resuelve la ruta completa de un archivo en el directorio 'data/'.
-     */
     private Path getFilePath(String fileName) {
         // Sanitización simple para evitar Path Traversal
         if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
@@ -109,7 +93,6 @@ public class JsonPersistenceManager {
         return dataDirectory.resolve(fileName);
     }
 
-    // --- MÉTODO readCollection MODIFICADO ---
     /**
      * Lee una colección de objetos desde un archivo JSON.
      * Es seguro para concurrencia (usa ReadLock).
@@ -124,10 +107,7 @@ public class JsonPersistenceManager {
     
         Path filePath = getFilePath(fileName);
     
-        try {
-            // AHORA ESTAMOS SEGUROS DE QUE EL ARCHIVO EXISTE gracias a init()
-            // Ya no necesitamos el bloque 'if (Files.notExists...)' que causaba el deadlock
-    
+        try {    
             // Si el archivo está vacío (ej. justo después de crearlo), devuelve lista vacía
             if (Files.size(filePath) == 0) {
                  logger.debug("Archivo {} está vacío, devolviendo lista vacía.", fileName);
@@ -135,16 +115,13 @@ public class JsonPersistenceManager {
             }
 
             try (BufferedReader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
-                // Construye el tipo List<T> para Jackson
                 com.fasterxml.jackson.databind.type.CollectionType javaType = objectMapper.getTypeFactory()
                         .constructCollectionType(List.class, itemClass);
                 
-                // Añadir manejo por si el JSON está malformado o no es una lista
                 try {
                      return objectMapper.readValue(reader, javaType);
-                } catch (com.fasterxml.jackson.databind.JsonMappingException | com.fasterxml.jackson.core.JsonParseException e) { // Capturar ambos
+                } catch (com.fasterxml.jackson.databind.JsonMappingException | com.fasterxml.jackson.core.JsonParseException e) { 
                      logger.error("Error al parsear JSON en {}. ¿Contenido es una lista JSON válida? {}", fileName, e.getMessage());
-                     // Devuelve lista vacía o lanza una excepción específica si prefieres
                      return new ArrayList<>();
                 }
             }
@@ -154,12 +131,12 @@ public class JsonPersistenceManager {
     }
 
     /**
-     * Escribe (sobrescribe) una colección completa a un archivo JSON.
-     * Es atómico (usa write-to-temp-then-rename) y seguro para concurrencia (usa WriteLock).
-     * También crea un backup (.bak) del archivo anterior.
+     * Escribe (sobrescribe) una coleccion completa a un archivo JSON.
+     * (usa WriteLock).
+     * Tambien crea un backup (.bak) del archivo anterior.
      *
      * @param fileName Nombre del archivo (ej. "users.json")
-     * @param collection La colección de objetos a guardar.
+     * @param collection La coleccion de objetos a guardar.
      */
     public void writeCollection(String fileName, Collection<?> collection) throws IOException {
         ReentrantReadWriteLock.WriteLock writeLock = getLock(fileName).writeLock();
@@ -180,13 +157,12 @@ public class JsonPersistenceManager {
                 Files.move(filePath, bakPath, StandardCopyOption.REPLACE_EXISTING);
             }
 
-            // 3. Renombrar el temporal al archivo final (operación atómica)
+            // 3. Renombrar el temporal al archivo final
             Files.move(tempPath, filePath, StandardCopyOption.REPLACE_EXISTING);
 
         } catch (IOException e) {
             logger.error("Error al escribir en {}: {}", fileName, e.getMessage());
-            // Intentar restaurar desde el temporal o backup si algo falló
-            try { // Usar try-with-resources aquí también por si acaso
+            try { 
                 if (Files.exists(tempPath)) {
                     Files.deleteIfExists(tempPath);
                 }
@@ -197,7 +173,7 @@ public class JsonPersistenceManager {
             } catch (IOException ex) {
                 logger.error("Error adicional intentando limpiar/restaurar después de fallo de escritura: {}", ex.getMessage());
             }
-            throw e; // Relanzar la excepción original
+            throw e; // Relanzar la excepcion original
         } finally {
             writeLock.unlock();
         }

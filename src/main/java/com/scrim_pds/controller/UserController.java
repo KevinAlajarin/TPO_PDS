@@ -40,10 +40,10 @@ public class UserController {
     })
     @GetMapping("/me")
     public ResponseEntity<User> getMyProfile(
-            @Parameter(hidden = true) // Ocultar de Swagger, ya que se resuelve automáticamente
+            @Parameter(hidden = true) // Ocultar de Swagger
             @AuthUser User authenticatedUser
     ) {
-        // @AuthUser ya buscó al usuario, así que podemos devolverlo directamente.
+        // @AuthUser ya busco al usuario, asi que podemos devolverlo directamente.
         // No necesitamos quitar el hash de la contraseña porque el @AuthUser
         // no lo incluye si lo filtramos (aunque nuestro DTO LoginResponse sí lo filtra).
         // Por seguridad, es mejor devolver solo un DTO de respuesta.

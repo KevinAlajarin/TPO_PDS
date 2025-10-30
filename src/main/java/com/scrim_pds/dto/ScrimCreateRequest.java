@@ -3,7 +3,7 @@ package com.scrim_pds.dto;
 import com.scrim_pds.model.enums.Formato;
 import com.scrim_pds.model.enums.MatchmakingStrategyType;
 import com.scrim_pds.model.enums.Modalidad;
-import io.swagger.v3.oas.annotations.media.Schema; // <-- Importar Schema
+import io.swagger.v3.oas.annotations.media.Schema; 
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
@@ -11,10 +11,10 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "Datos requeridos para crear un nuevo Scrim") // Descripción del DTO
+@Schema(description = "Datos requeridos para crear un nuevo Scrim") // Descripcion del DTO
 public class ScrimCreateRequest {
 
-    @Schema(description = "Nombre del juego", example = "Valorant") // Descripción y ejemplo para Swagger
+    @Schema(description = "Nombre del juego", example = "Valorant") // Descripcion y ejemplo para Swagger
     @NotEmpty(message = "El juego no puede estar vacío.")
     private String juego;
 
@@ -63,7 +63,7 @@ public class ScrimCreateRequest {
 
     @Schema(description = "Estrategia de matchmaking a usar (si aplica)", example = "BY_MMR")
     @NotNull(message = "El tipo de estrategia de matchmaking no puede ser nulo.")
-    private MatchmakingStrategyType matchmakingStrategyType; // <-- Añadido
+    private MatchmakingStrategyType matchmakingStrategyType; 
 
     // Getters y Setters
     public String getJuego() { return juego; }
@@ -88,7 +88,7 @@ public class ScrimCreateRequest {
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public Integer getCupo() { return cupo; }
     public void setCupo(Integer cupo) { this.cupo = cupo; }
-    public MatchmakingStrategyType getMatchmakingStrategyType() { return matchmakingStrategyType; } // <-- Nuevo
-    public void setMatchmakingStrategyType(MatchmakingStrategyType matchmakingStrategyType) { this.matchmakingStrategyType = matchmakingStrategyType; } // <-- Nuevo
+    public MatchmakingStrategyType getMatchmakingStrategyType() { return matchmakingStrategyType; } 
+    public void setMatchmakingStrategyType(MatchmakingStrategyType matchmakingStrategyType) { this.matchmakingStrategyType = matchmakingStrategyType; } 
 }
 

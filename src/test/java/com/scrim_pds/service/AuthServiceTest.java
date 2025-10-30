@@ -9,7 +9,7 @@ import com.scrim_pds.exception.UserAlreadyExistsException;
 import com.scrim_pds.model.Session;
 import com.scrim_pds.model.User;
 import com.scrim_pds.model.VerificationToken;
-import com.scrim_pds.model.enums.UserRole; // <-- Importar UserRole
+import com.scrim_pds.model.enums.UserRole; 
 import com.scrim_pds.model.enums.VerificationState;
 import com.scrim_pds.notification.NotificationService;
 import com.scrim_pds.persistence.JsonPersistenceManager;
@@ -20,14 +20,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings; // <-- Importar MockitoSettings
-import org.mockito.quality.Strictness; // <-- Importar Strictness
+import org.mockito.junit.jupiter.MockitoSettings; 
+import org.mockito.quality.Strictness; 
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collection; // <-- Importar Collection
+import java.util.Collection; 
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -38,7 +38,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-@MockitoSettings(strictness = Strictness.LENIENT) // <-- AÑADIDO: Ignorar stubs innecesarios
+@MockitoSettings(strictness = Strictness.LENIENT) 
 class AuthServiceTest {
 
     @Mock
@@ -65,7 +65,7 @@ class AuthServiceTest {
         when(persistenceManager.readCollection(eq("verifications.json"), eq(VerificationToken.class))).thenReturn(tokenList);
         when(persistenceManager.readCollection(eq("sessions.json"), eq(Session.class))).thenReturn(sessionList);
 
-        // --- MOCK DE ESCRITURA CORREGIDO ---
+        // --- MOCK DE ESCRITURA ---
         // Simula la sobreescritura del archivo
         doAnswer(invocation -> {
              // 1. Copiar la colección que se pasa al método write
@@ -92,7 +92,7 @@ class AuthServiceTest {
          }).when(persistenceManager).writeCollection(eq("sessions.json"), any());
     }
 
-    // --- Tests de REGISTER (sin cambios, pero ahora el mock de setUp funciona) ---
+    // --- Tests de REGISTER ---
     @Test
     void register_shouldCreateUser_whenDataIsValid() throws IOException {
         // Arrange
@@ -109,7 +109,7 @@ class AuthServiceTest {
         // Assert
         assertNotNull(newUser);
         assertEquals("testuser", newUser.getUsername());
-        assertEquals(1, userList.size()); // <-- Esta aserción ahora debe pasar
+        assertEquals(1, userList.size()); 
         assertEquals(1, tokenList.size());
         verify(persistenceManager, times(1)).writeCollection(eq("users.json"), any());
         verify(persistenceManager, times(1)).writeCollection(eq("verifications.json"), any());
@@ -118,7 +118,6 @@ class AuthServiceTest {
 
     @Test
     void register_shouldThrowException_whenEmailExists() throws IOException {
-        // ... (sin cambios)
         User existingUser = new User();
         existingUser.setEmail("test@example.com");
         userList.add(existingUser);
@@ -131,7 +130,6 @@ class AuthServiceTest {
 
      @Test
     void register_shouldThrowException_whenUsernameExists() throws IOException {
-        // ... (sin cambios)
         User existingUser = new User();
         existingUser.setUsername("testuser");
         existingUser.setEmail("other@example.com");
@@ -143,8 +141,7 @@ class AuthServiceTest {
         assertThrows(UserAlreadyExistsException.class, () -> authService.register(request));
     }
 
-
-    // --- NUEVOS TESTS PARA LOGIN (CORREGIDOS) ---
+    // --- TESTS PARA LOGIN ---
 
     @Test
     void login_shouldReturnLoginResponse_whenCredentialsAreValid() throws IOException {
@@ -158,7 +155,7 @@ class AuthServiceTest {
         existingUser.setEmail(email);
         existingUser.setPasswordHash(hashedPassword);
         existingUser.setEstadoVerificacion(VerificationState.VERIFICADO);
-        existingUser.setRol(UserRole.USER); // <-- CORRECCIÓN: Añadir Rol
+        existingUser.setRol(UserRole.USER); 
         userList.add(existingUser);
 
         // Act
@@ -175,7 +172,6 @@ class AuthServiceTest {
 
     @Test
     void login_shouldThrowException_whenEmailNotFound() throws IOException {
-        // ... (sin cambios)
         InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () -> {
             authService.login("noexiste@test.com", "password123");
         });
@@ -193,7 +189,7 @@ class AuthServiceTest {
         existingUser.setEmail(email);
         existingUser.setPasswordHash(hashedPassword);
         existingUser.setEstadoVerificacion(VerificationState.VERIFICADO);
-        existingUser.setRol(UserRole.USER); // <-- CORRECCIÓN: Añadir Rol (buena práctica)
+        existingUser.setRol(UserRole.USER); 
         userList.add(existingUser);
 
         // Act & Assert
@@ -203,7 +199,7 @@ class AuthServiceTest {
         assertEquals(0, sessionList.size()); // No se crearon sesiones
     }
 
-    // --- NUEVOS TESTS PARA VERIFY_EMAIL (sin cambios) ---
+    // --- NUEVOS TESTS PARA VERIFY_EMAIL ---
 
     @Test
     void verifyEmail_shouldSetUserToVerified_whenTokenIsValid() throws IOException {
@@ -245,7 +241,7 @@ class AuthServiceTest {
 
         // Act & Assert
         assertThrows(TokenExpiredException.class, () -> authService.verifyEmail(tokenString));
-        assertEquals(0, tokenList.size()); // Token expirado se borra
+        assertEquals(0, tokenList.size()); 
         verify(persistenceManager, times(1)).writeCollection(eq("verifications.json"), any());
     }
 }

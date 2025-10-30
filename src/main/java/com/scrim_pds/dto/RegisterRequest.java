@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 
-import java.util.Set; // Importar Set
+import java.util.Set; 
 
 public class RegisterRequest {
 
@@ -24,7 +24,7 @@ public class RegisterRequest {
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres.")
     private String password;
 
-    // --- NUEVOS CAMPOS OPCIONALES PARA PREFERENCIAS ---
+    // --- CAMPOS OPCIONALES PARA PREFERENCIAS ---
     @Schema(description = "Juego principal preferido (opcional)", example = "Valorant", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private String juegoPreferido;
 
@@ -40,7 +40,7 @@ public class RegisterRequest {
     @Schema(description = "Canales de notificación preferidos (opcional, valores: EMAIL, PUSH, DISCORD)", example = "[\"EMAIL\", \"PUSH\"]", requiredMode = Schema.RequiredMode.NOT_REQUIRED)
     private Set<String> canalesPreferidos; // Set de Strings
 
-    // Getters y Setters (para todos los campos, incluyendo los nuevos)
+    // Getters y Setters
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
     public String getEmail() { return email; }

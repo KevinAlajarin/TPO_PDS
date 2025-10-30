@@ -8,7 +8,7 @@ public class VerificationToken {
     private UUID userId;
     private LocalDateTime expiresAt;
 
-    // Constructor vacío para Jackson
+    // Constructor
     public VerificationToken() {
     }
 

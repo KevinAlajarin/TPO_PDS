@@ -1,13 +1,13 @@
 package com.scrim_pds.event;
 
 import com.scrim_pds.model.Postulacion;
-import com.scrim_pds.model.Scrim; // Necesitamos leer Scrims
+import com.scrim_pds.model.Scrim; 
 import com.scrim_pds.model.User;
 import com.scrim_pds.model.enums.CanalNotificacion;
 import com.scrim_pds.model.enums.PostulacionState;
 import com.scrim_pds.notification.NotificationService;
 import com.scrim_pds.persistence.JsonPersistenceManager;
-import com.scrim_pds.service.UserService; // Necesitamos UserService
+import com.scrim_pds.service.UserService; 
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,27 +19,26 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Suscriptor que escucha LobbyArmadoEvent y notifica al organizador y participantes.
- */
+// Suscriptor que escucha LobbyArmadoEvent y notifica al organizador y participantes.
+
 @Component
 public class LobbyArmadoSubscriber implements Subscriber<LobbyArmadoEvent> {
 
     private static final Logger logger = LoggerFactory.getLogger(LobbyArmadoSubscriber.class);
 
     private final DomainEventBus eventBus;
-    private final JsonPersistenceManager persistenceManager; // Para leer Postulaciones y Scrims
+    private final JsonPersistenceManager persistenceManager; 
     private final NotificationService notificationService;
-    private final UserService userService; // Para buscar usuarios por ID
+    private final UserService userService; 
 
     public LobbyArmadoSubscriber(DomainEventBus eventBus,
                                  JsonPersistenceManager persistenceManager,
                                  NotificationService notificationService,
-                                 UserService userService) { // Inyectar UserService
+                                 UserService userService) { 
         this.eventBus = eventBus;
         this.persistenceManager = persistenceManager;
         this.notificationService = notificationService;
-        this.userService = userService; // Guardar instancia
+        this.userService = userService; 
     }
 
     @PostConstruct
@@ -58,7 +57,7 @@ public class LobbyArmadoSubscriber implements Subscriber<LobbyArmadoEvent> {
         logger.info("Procesando LobbyArmadoEvent para Scrim ID: {}", scrimId);
 
         try {
-            // Releer el Scrim por si acaso (aunque el evento podría tener más datos)
+            // Releer el Scrim por si acaso, aunque el evento podría tener mas datos.
              List<Scrim> scrims = persistenceManager.readCollection("scrims.json", Scrim.class);
              Optional<Scrim> scrimOpt = scrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
              if (scrimOpt.isEmpty()) {
@@ -112,10 +111,8 @@ public class LobbyArmadoSubscriber implements Subscriber<LobbyArmadoEvent> {
         }
     }
 
-    /**
-     * Verifica si un usuario desea recibir notificaciones por un canal específico.
-     * (Simplificado: asume que la preferencia 'alertasScrim' cubre este evento)
-     */
+    // Verifica si un usuario desea recibir notificaciones por un canal específico.
+
     private boolean shouldNotify(User user, CanalNotificacion canal) {
         if (user.getPreferencias() == null) return false; // Sin preferencias, no notificar
         // Usamos la preferencia general 'alertasScrim' por ahora

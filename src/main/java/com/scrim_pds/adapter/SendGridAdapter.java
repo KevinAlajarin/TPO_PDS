@@ -1,6 +1,6 @@
 package com.scrim_pds.adapter;
 
-import com.sendgrid.*; // Import SendGrid classes
+import com.sendgrid.*; 
 import com.sendgrid.helpers.mail.Mail;
 import com.sendgrid.helpers.mail.objects.Content;
 import com.sendgrid.helpers.mail.objects.Email;
@@ -11,10 +11,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-/**
- * Implementación concreta del EmailAdapter usando SendGrid (Diagrama).
- */
-@Component // Para que Spring lo gestione
+
+// Implementación concreta del EmailAdapter usando SendGrid.
+
+@Component 
 public class SendGridAdapter implements EmailAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(SendGridAdapter.class);
@@ -36,7 +36,7 @@ public class SendGridAdapter implements EmailAdapter {
 
     @Override
     public boolean enviarEmail(String destinatario, String asunto, String cuerpo) {
-        // Si el cliente no se inicializó (falta API key), no intentar enviar.
+        // Si el cliente no se inicializo (falta API key), no intentar enviar.
         if (sendGridClient == null) {
             logger.warn("SendGrid client no inicializado (API Key faltante?). Email a {} no enviado.", destinatario);
             return false;
@@ -44,7 +44,6 @@ public class SendGridAdapter implements EmailAdapter {
 
         Email from = new Email(this.fromEmail);
         Email to = new Email(destinatario);
-        // Puedes usar "text/html" para contenido HTML
         Content content = new Content("text/plain", cuerpo);
         Mail mail = new Mail(from, asunto, to, content);
 
@@ -57,7 +56,7 @@ public class SendGridAdapter implements EmailAdapter {
             logger.info("Enviando email a {} con asunto '{}' via SendGrid...", destinatario, asunto);
             Response response = sendGridClient.api(request);
 
-            // SendGrid devuelve 2xx si el email fue aceptado para envío
+            // SendGrid devuelve 2xx si el email fue aceptado para envio
             if (response.getStatusCode() >= 200 && response.getStatusCode() < 300) {
                 logger.info("Email a {} aceptado por SendGrid (StatusCode: {})", destinatario, response.getStatusCode());
                 return true;

@@ -52,7 +52,7 @@ public class ScrimIniciadoSubscriber implements Subscriber<ScrimIniciadoEvent> {
         logger.info("Procesando ScrimIniciadoEvent para Scrim ID: {}", scrimId);
 
         try {
-            // Releer Scrim para asegurar estado EN_JUEGO (opcional)
+            // Releer Scrim para asegurar estado EN_JUEGO
             List<Scrim> scrims = persistenceManager.readCollection("scrims.json", Scrim.class);
             Optional<Scrim> scrimOpt = scrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
             if (scrimOpt.isEmpty()) {

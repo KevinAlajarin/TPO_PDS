@@ -52,7 +52,7 @@ public class ScrimControllerIntegrationTest {
     @MockBean
     private UserService userService;
 
-    // --- Datos de simulación ---
+    // --- Datos de simulacion ---
     private User mockUser;
     private String mockToken;
     private Scrim mockScrim;
@@ -97,7 +97,7 @@ public class ScrimControllerIntegrationTest {
                 .andExpect(jsonPath("$").isEmpty());
     }
 
-    // --- Test 2: POST /api/scrims (Éxito) ---
+    // --- Test 2: POST /api/scrims (Exito) ---
     @Test
     void createScrim_shouldReturnCreated_whenAuthenticatedAndDataIsValid() throws Exception {
         // Arrange
@@ -145,7 +145,6 @@ public class ScrimControllerIntegrationTest {
         request.setLatenciaMax(100);
         request.setDuracion(60);
         request.setRegion("LATAM");
-
 
         // Act & Assert
         mockMvc.perform(post("/api/scrims")

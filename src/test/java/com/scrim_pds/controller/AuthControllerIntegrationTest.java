@@ -9,7 +9,7 @@ import com.scrim_pds.exception.InvalidTokenException;
 import com.scrim_pds.exception.TokenExpiredException;
 import com.scrim_pds.exception.UserAlreadyExistsException;
 import com.scrim_pds.model.User;
-import com.scrim_pds.model.enums.UserRole; // <-- Importar UserRole
+import com.scrim_pds.model.enums.UserRole; 
 import com.scrim_pds.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,7 +68,7 @@ class AuthControllerIntegrationTest {
     void registerUser_shouldReturnBadRequest_whenDataIsInvalid() throws Exception {
         // Arrange
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("u"); // Inválido
+        request.setUsername("u"); // Invalido
         request.setEmail("not-an-email");
         request.setPassword("short");
 
@@ -101,7 +101,7 @@ class AuthControllerIntegrationTest {
                 .andExpect(jsonPath("$.error").value("El email existing@test.com ya está en uso."));
     }
 
-    // --- NUEVOS TESTS PARA LOGIN y VERIFY (CORREGIDOS) ---
+    // --- TESTS PARA LOGIN y VERIFY ---
 
     @Test
     void login_shouldReturnToken_whenCredentialsAreValid() throws Exception {
@@ -112,7 +112,7 @@ class AuthControllerIntegrationTest {
         User mockUser = new User();
         mockUser.setId(UUID.randomUUID());
         mockUser.setEmail(email);
-        mockUser.setRol(UserRole.USER); // <-- CORRECCIÓN: Añadir Rol para evitar NPE
+        mockUser.setRol(UserRole.USER); 
         LoginResponse mockResponse = new LoginResponse(token, mockUser);
 
         when(authService.login(eq(email), anyString())).thenReturn(mockResponse);

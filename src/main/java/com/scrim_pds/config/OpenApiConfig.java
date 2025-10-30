@@ -14,6 +14,6 @@ import org.springframework.context.annotation.Configuration;
     bearerFormat = "JWT", // O simplemente "token"
     scheme = "bearer"
 )
+
 public class OpenApiConfig {
-    // No necesita contenido adicional, las anotaciones hacen el trabajo.
 }

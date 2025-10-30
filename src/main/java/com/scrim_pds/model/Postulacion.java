@@ -9,12 +9,12 @@ public class Postulacion {
     private UUID id;
     private UUID usuarioId;
     private UUID scrimId;
-    private String rolDeseado; // Ej: "Duelista"
-    private PostulacionState estado; // PENDIENTE, ACEPTADA, RECHAZADA
+    private String rolDeseado; 
+    private PostulacionState estado; 
     private int latenciaReportada;
     private LocalDateTime fechaPostulacion;
 
-    // Constructor sin argumentos para Jackson
+    // Constructor
     public Postulacion() {
     }
     

@@ -1,8 +1,7 @@
 package com.scrim_pds.adapter;
 
-/**
- * Interfaz Adapter para cualquier servicio de envío de correos (Diagrama).
- */
+// Interfaz Adapter para el servicio de envio de correo.
+
 public interface EmailAdapter {
 
     /**

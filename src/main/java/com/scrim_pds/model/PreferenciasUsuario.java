@@ -1,31 +1,29 @@
 package com.scrim_pds.model;
 
-import com.scrim_pds.model.enums.CanalNotificacion; // Importar enum si lo usamos directamente
+import com.scrim_pds.model.enums.CanalNotificacion; 
 
-import java.util.HashSet; // Usar HashSet para inicializar
+import java.util.HashSet; 
 import java.util.Set;
 
 public class PreferenciasUsuario {
 
-    // Usaremos Set<String> para simplificar la serialización JSON.
     // Valores posibles: "EMAIL", "PUSH", "DISCORD"
-    private Set<String> canalesNotificacion = new HashSet<>(); // Inicializar
+    private Set<String> canalesNotificacion = new HashSet<>(); 
 
     // Switches para activar/desactivar tipos de alertas
     private boolean alertasScrim = true; // Activado por defecto
     private boolean alertasPostulacion = true; // Activado por defecto
     private boolean recordatoriosActivos = true; // Activado por defecto
 
-    // Preferencias de búsqueda por defecto
+    // Preferencias de busqueda por defecto
     private String busquedaJuegoPorDefecto;
     private String busquedaRegionPorDefecto;
     private String busquedaRangoMinPorDefecto;
     private String busquedaRangoMaxPorDefecto;
 
-    // Constructor vacío para Jackson
+    // Constructor
     public PreferenciasUsuario() {
         // Establecer valores por defecto si es necesario,
-        // aunque es mejor hacerlo al crear el usuario.
         canalesNotificacion.add(CanalNotificacion.EMAIL.name()); // Email por defecto
     }
 
@@ -35,7 +33,7 @@ public class PreferenciasUsuario {
     }
 
     public void setCanalesNotificacion(Set<String> canalesNotificacion) {
-        this.canalesNotificacion = canalesNotificacion != null ? canalesNotificacion : new HashSet<>(); // Evitar null
+        this.canalesNotificacion = canalesNotificacion != null ? canalesNotificacion : new HashSet<>(); 
     }
 
     public boolean isAlertasScrim() {

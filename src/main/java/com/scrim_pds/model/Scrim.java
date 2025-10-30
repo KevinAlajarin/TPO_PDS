@@ -1,13 +1,14 @@
 package com.scrim_pds.model;
 
 import com.scrim_pds.model.enums.Formato;
-import com.scrim_pds.model.enums.MatchmakingStrategyType; // <-- Import
+import com.scrim_pds.model.enums.MatchmakingStrategyType; 
 import com.scrim_pds.model.enums.Modalidad;
 import com.scrim_pds.model.enums.ScrimStateEnum;
+import io.swagger.v3.oas.annotations.media.Schema; 
 
 import java.time.LocalDateTime;
 import java.util.UUID;
-import java.util.Objects; // Import for equals/hashCode
+import java.util.Objects; 
 
 public class Scrim {
     private UUID id;
@@ -16,19 +17,22 @@ public class Scrim {
     private String region;
     private String rangoMin;
     private String rangoMax;
-    private Integer latenciaMax; // Use Integer in case it's optional
+    private Integer latenciaMax; 
     private LocalDateTime fechaHora;
-    private Integer duracion; // Use Integer in case it's optional
+    private Integer duracion; 
     private Modalidad modalidad;
     private UUID organizadorId;
     private ScrimStateEnum estado;
     private String descripcion;
-    private Integer cupo; // Use Integer
-    private MatchmakingStrategyType matchmakingStrategyType; // <-- Added
+    private Integer cupo; 
+    private MatchmakingStrategyType matchmakingStrategyType; 
+    
+    @Schema(description = "Flag para saber si el recordatorio de 2 horas ya fue enviado", hidden = true) 
+    private boolean recordatorioEnviado = false; // Default false
 
     public Scrim() { }
 
-    // Getters and Setters (Include new ones)
+    // Getters and Setters 
     public UUID getId() { return id; }
     public void setId(UUID id) { this.id = id; }
     public String getJuego() { return juego; }
@@ -57,26 +61,30 @@ public class Scrim {
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public Integer getCupo() { return cupo; }
     public void setCupo(Integer cupo) { this.cupo = cupo; }
-    public MatchmakingStrategyType getMatchmakingStrategyType() { return matchmakingStrategyType; } // <-- New
-    public void setMatchmakingStrategyType(MatchmakingStrategyType matchmakingStrategyType) { this.matchmakingStrategyType = matchmakingStrategyType; } // <-- New
+    public MatchmakingStrategyType getMatchmakingStrategyType() { return matchmakingStrategyType; }
+    public void setMatchmakingStrategyType(MatchmakingStrategyType matchmakingStrategyType) { this.matchmakingStrategyType = matchmakingStrategyType; }
+    
+    public boolean isRecordatorioEnviado() {
+        return recordatorioEnviado;
+    }
+    
+    public void setRecordatorioEnviado(boolean recordatorioEnviado) {
+        this.recordatorioEnviado = recordatorioEnviado;
+    }
 
-    // --- IMPORTANT for indexOf ---
-    // Implement equals and hashCode based on ID so List.indexOf/contains works correctly
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Scrim scrim = (Scrim) o;
-        // Compare by ID only if both IDs are not null
         return id != null ? id.equals(scrim.id) : scrim.id == null;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id); // Only use ID for the hash
+        return Objects.hash(id); 
     }
 
-    // Optional: toString for debugging
     @Override
     public String toString() {
         return "Scrim{" +

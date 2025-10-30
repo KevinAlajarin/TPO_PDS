@@ -8,11 +8,11 @@ import com.scrim_pds.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*; // Importar GetMapping y RequestParam
+import org.springframework.web.bind.annotation.*; 
 
 // --- Swagger Imports ---
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter; // Importar Parameter
+import io.swagger.v3.oas.annotations.Parameter; 
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -35,7 +35,7 @@ public class AuthController {
         this.authService = authService;
     }
 
-    // --- ENDPOINT REGISTER MODIFICADO ---
+    // --- ENDPOINT REGISTER ---
     @Operation(summary = "Registrar un nuevo usuario (incluyendo preferencias opcionales)") // Descripcion actualizada
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Usuario registrado exitosamente",
@@ -53,7 +53,7 @@ public class AuthController {
             @Parameter(description = "Datos del usuario a registrar") // Descripción de parámetro
             @Valid @RequestBody RegisterRequest registerRequest) throws IOException {
 
-        // --- CAMBIO CLAVE: Pasar el DTO completo ---
+        // --- Pasar el DTO completo ---
         User newUser = authService.register(registerRequest);
 
         return new ResponseEntity<>(

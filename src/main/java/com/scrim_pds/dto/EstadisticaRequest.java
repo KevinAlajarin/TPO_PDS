@@ -6,7 +6,7 @@ import java.util.UUID;
 public class EstadisticaRequest {
 
     @NotNull
-    private UUID usuarioId; // ID del jugador al que se refiere esta estadística
+    private UUID usuarioId; // ID del jugador 
 
     private boolean mvp = false; // Valor por defecto
 

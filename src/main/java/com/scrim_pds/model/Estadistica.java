@@ -12,7 +12,7 @@ public class Estadistica {
     private int assists;
     private String observaciones;
 
-    // Constructor sin argumentos para Jackson
+    // Constructor
     public Estadistica() {
     }
 

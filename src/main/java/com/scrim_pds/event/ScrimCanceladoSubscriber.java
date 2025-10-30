@@ -58,11 +58,11 @@ public class ScrimCanceladoSubscriber implements Subscriber<ScrimCanceladoEvent>
              if (scrimOpt.isEmpty()) { logger.error("Scrim {} no encontrado.", scrimId); return; }
              Scrim scrim = scrimOpt.get();
 
-             // 1. Notificar Organizador (¿O no? Él lo canceló)
-             // Podríamos decidir no notificar al organizador aquí.
+             // 1. Notificar Organizador (no se le notifica al organizador porque es el quien lo cancela,
+             // si implementamos que un admin pueda cancelar un scrim entonces si deberiamos notificarle)
              userService.findUserById(event.organizadorId()).ifPresent(organizador -> {
                  if (shouldNotify(organizador, CanalNotificacion.EMAIL)) {
-                     // notificationService.sendScrimCanceladoNotification(organizador, scrim); // Podría ser redundante
+                     // notificationService.sendScrimCanceladoNotification(organizador, scrim); 
                      logger.debug("Omitiendo notificación de cancelación al organizador {}", organizador.getId());
                  }
              });

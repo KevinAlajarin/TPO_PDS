@@ -28,10 +28,10 @@ public class LoginResponse {
         this.user = user;
     }
 
-    /**
-     * Clase interna para filtrar los datos del usuario que devolvemos.
-     * NUNCA devolver el passwordHash.
-     */
+
+//    Clase interna para filtrar los datos del usuario que devolvemos.
+//    NUNCA devolver el passwordHash.
+
     public static class UserData {
         private String id;
         private String username;

@@ -21,13 +21,13 @@ public class AuthUserArgumentResolver implements HandlerMethodArgumentResolver {
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
-        // Solo se activa si el parámetro tiene la anotación @AuthUser
+        // Solo se activa si el parametro tiene la anotación @AuthUser
         return parameter.getParameterAnnotation(AuthUser.class) != null;
     }
 
     @Override
     public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-                                  NativeWebRequest webRequest, WebDataBinderFactory binderFactory) { // <-- QUITAR 'throws Exception'
+                                  NativeWebRequest webRequest, WebDataBinderFactory binderFactory) { 
         
         // 1. Obtener el token del header "Authorization: Bearer <token>"
         String authHeader = webRequest.getHeader("Authorization");
@@ -35,7 +35,7 @@ public class AuthUserArgumentResolver implements HandlerMethodArgumentResolver {
             throw new UnauthorizedException("Header 'Authorization: Bearer <token>' faltante o mal formado.");
         }
         
-        String token = authHeader.substring(7); // Quita "Bearer "
+        String token = authHeader.substring(7); 
 
         // 2. Buscar al usuario (ya no lanza IOException)
         User user = userService.findUserByToken(token)

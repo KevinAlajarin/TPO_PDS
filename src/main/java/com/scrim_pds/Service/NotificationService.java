@@ -4,44 +4,34 @@ import com.scrim_pds.model.Scrim;
 import com.scrim_pds.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-// import org.springframework.beans.factory.annotation.Qualifier; // <-- BORRADO
 import org.springframework.stereotype.Service;
 
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 import java.util.Locale;
-import java.util.UUID;
+import java.util.UUID; 
 
 @Service
 public class NotificationService {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
-    // Los notifiers que usará este servicio
     private final Notifier emailNotifier;
-    private final Notifier pushNotifier; // Podríamos usarlo aunque no esté implementado
-    private final Notifier discordNotifier; // Podríamos usarlo aunque no esté implementado
+    private final Notifier pushNotifier;
+    private final Notifier discordNotifier;
 
-    // Formateador para fechas/horas en emails (puedes ajustar el estilo y Locale)
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
-            .ofLocalizedDateTime(FormatStyle.MEDIUM) // MEDIUM = "Oct 29, 2025, 1:15:30 PM" (ejemplo)
-            .withLocale(Locale.getDefault()); // Usa el locale del servidor (puedes forzar "es-AR" etc.)
+            .ofLocalizedDateTime(FormatStyle.MEDIUM)
+            .withLocale(Locale.getDefault());
 
-
-    // --- CONSTRUCTOR MODIFICADO ---
-    // Inyectamos la Factory en lugar del Notifier específico
     public NotificationService(NotifierFactory factory) {
-        // Usamos la factory para construir los notifiers que necesitamos
         this.emailNotifier = factory.createEmailNotifier();
         this.pushNotifier = factory.createPushNotifier();
         this.discordNotifier = factory.createDiscordNotifier();
     }
 
-    /**
-     * Envía una notificación de bienvenida con link de verificación.
-     * @param newUser El usuario recién registrado.
-     * @param verificationLink El link de verificación a incluir.
-     */
+    // Envia una notificacion de bienvenida con link de verificación.
+
     public void sendWelcomeNotification(User newUser, String verificationLink) {
         String destinatario = newUser.getEmail();
         String asunto = "¡Bienvenido a eScrim! Verifica tu email";
@@ -53,16 +43,12 @@ public class NotificationService {
                         "Saludos,\nEl equipo de eScrim";
 
         logger.info("Intentando enviar email de verificación/bienvenida a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
-        logResult("Verificación/Bienvenida", enviado, null, destinatario); // Usar helper
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        logResult("Verificación/Bienvenida", enviado, null, destinatario);
     }
 
+    // Envia una notificacion por email sobre un nuevo Scrim que coincide con preferencias.
 
-    /**
-     * Envía una notificación por email sobre un nuevo Scrim que coincide con preferencias.
-     * @param recipient El usuario a notificar.
-     * @param scrim El nuevo scrim que coincide.
-     */
     public void sendNewScrimNotification(User recipient, Scrim scrim) {
         String destinatario = recipient.getEmail();
         String asunto = "¡Nuevo Scrim disponible que podría interesarte!";
@@ -75,7 +61,7 @@ public class NotificationService {
             "Región: %s\n" +
             "Formato: %s\n" +
             "Rango: %s - %s\n" +
-            "Fecha: %s\n" + // Usar fecha formateada
+            "Fecha: %s\n" +
             "Descripción: %s\n\n" +
             "¡Puedes buscarlo en la plataforma!\n\n" +
             "Saludos,\nEl equipo de eScrim",
@@ -85,20 +71,17 @@ public class NotificationService {
             scrim.getFormato() != null ? scrim.getFormato() : "N/A",
             scrim.getRangoMin() != null ? scrim.getRangoMin() : "N/A",
             scrim.getRangoMax() != null ? scrim.getRangoMax() : "N/A",
-            fechaFormateada, // <-- Usar fecha formateada
+            fechaFormateada,
             scrim.getDescripcion() != null && !scrim.getDescripcion().isEmpty() ? scrim.getDescripcion() : "(Sin descripción)"
         );
 
         logger.info("Intentando enviar notificación de nuevo scrim a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
-        logResult("Nuevo Scrim", enviado, scrim.getId(), destinatario); // Usar helper
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        logResult("Nuevo Scrim", enviado, scrim.getId(), destinatario);
     }
 
-    /**
-     * Envía una notificación por email indicando que el Lobby está listo.
-     * @param recipient El usuario (organizador o postulante) a notificar.
-     * @param scrim El scrim cuyo lobby se armó.
-     */
+    // Envía una notificación por email indicando que el Lobby está listo.
+
     public void sendLobbyArmadoNotification(User recipient, Scrim scrim) {
         String destinatario = recipient.getEmail();
         String asunto = "¡Lobby Armado para tu Scrim de " + (scrim.getJuego() != null ? scrim.getJuego() : "Juego Desconocido") + "!";
@@ -106,11 +89,11 @@ public class NotificationService {
 
         String cuerpo = String.format(
             "Hola %s,\n\n" +
-            "¡El lobby para el scrim de %s (%s) está completo!\n\n" + // Incluir ID para referencia
+            "¡El lobby para el scrim de %s (%s) está completo!\n\n" +
             "Detalles del Scrim:\n" +
             " - Juego: %s\n" +
             " - Región: %s\n" +
-            " - Fecha: %s\n\n" + // Usar fecha formateada
+            " - Fecha: %s\n\n" +
             "El siguiente paso es que todos los participantes confirmen su asistencia.\n" +
             "Ve a la plataforma para confirmar tu participación.\n" +
             "Recibirás otra notificación una vez que todos hayan confirmado.\n\n" +
@@ -120,19 +103,16 @@ public class NotificationService {
             scrim.getId(),
             scrim.getJuego() != null ? scrim.getJuego() : "N/A",
             scrim.getRegion() != null ? scrim.getRegion() : "N/A",
-            fechaFormateada // <-- Usar fecha formateada
+            fechaFormateada
         );
 
         logger.info("Intentando enviar notificación de Lobby Armado a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
-        logResult("Lobby Armado", enviado, scrim.getId(), destinatario); // Usar helper
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        logResult("Lobby Armado", enviado, scrim.getId(), destinatario);
     }
 
-    /**
-     * Envía una notificación por email indicando que el Scrim está confirmado y listo para iniciar.
-     * @param recipient El usuario (organizador o participante) a notificar.
-     * @param scrim El scrim que fue confirmado.
-     */
+    // Envia una notificacion por email indicando que el Scrim esta confirmado y listo para iniciar.
+
     public void sendScrimConfirmadoNotification(User recipient, Scrim scrim) {
         String destinatario = recipient.getEmail();
         String asunto = "¡Scrim Confirmado! Prepárense para " + (scrim.getJuego() != null ? scrim.getJuego() : "la partida");
@@ -140,25 +120,24 @@ public class NotificationService {
 
         String cuerpo = String.format(
             "Hola %s,\n\n" +
-            "¡Todos los participantes han confirmado para el scrim de %s (%s)!\n\n" + // Incluir ID
-            "El scrim está programado para comenzar el: %s\n\n" + // Usar fecha formateada
+            "¡Todos los participantes han confirmado para el scrim de %s (%s)!\n\n" +
+            "El scrim está programado para comenzar el: %s\n\n" +
             "¡Prepárate para la partida!\n" +
             "\n" +
             "Saludos,\nEl equipo de eScrim",
             recipient.getUsername(),
             scrim.getJuego() != null ? scrim.getJuego() : "N/A",
-            scrim.getId(), // Incluir ID
-            fechaFormateada // Usar fecha formateada
+            scrim.getId(),
+            fechaFormateada
         );
 
         logger.info("Intentando enviar notificación de Scrim Confirmado a {}", destinatario);
-        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo); // Sigue funcionando igual
-        logResult("Scrim Confirmado", enviado, scrim.getId(), destinatario); // Usar helper
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        logResult("Scrim Confirmado", enviado, scrim.getId(), destinatario);
     }
 
-    /**
-     * Envía notificación de que el Scrim ha iniciado.
-     */
+    // Envia notificacion de que el Scrim ha iniciado.
+
     public void sendScrimIniciadoNotification(User recipient, Scrim scrim) {
         String destinatario = recipient.getEmail();
         String asunto = "¡Tu Scrim de " + (scrim.getJuego() != null ? scrim.getJuego() : "N/A") + " ha comenzado!";
@@ -166,12 +145,12 @@ public class NotificationService {
 
         String cuerpo = String.format(
             "Hola %s,\n\n" +
-            "¡El scrim de %s (%s) programado para %s acaba de comenzar!\n\n" + // Incluir ID
+            "¡El scrim de %s (%s) programado para %s acaba de comenzar!\n\n" +
             "¡Mucha suerte en la partida!\n\n" +
             "Saludos,\nEl equipo de eScrim",
             recipient.getUsername(),
             scrim.getJuego() != null ? scrim.getJuego() : "N/A",
-            scrim.getId(), // Incluir ID
+            scrim.getId(),
             fechaFormateada
         );
 
@@ -180,9 +159,8 @@ public class NotificationService {
         logResult("Scrim Iniciado", enviado, scrim.getId(), destinatario);
     }
 
-    /**
-     * Envía notificación de que el Scrim ha finalizado.
-     */
+    // Envia notificacion de que el Scrim ha finalizado.
+
     public void sendScrimFinalizadoNotification(User recipient, Scrim scrim) {
         String destinatario = recipient.getEmail();
         String asunto = "¡Tu Scrim de " + (scrim.getJuego() != null ? scrim.getJuego() : "N/A") + " ha finalizado!";
@@ -191,13 +169,13 @@ public class NotificationService {
 
         String cuerpo = String.format(
             "Hola %s,\n\n" +
-            "El scrim de %s (%s) ha finalizado.\n\n" + // Incluir ID
-            "%s\n\n" + // Mensaje extra
+            "El scrim de %s (%s) ha finalizado.\n\n" +
+            "%s\n\n" +
             "¡Esperamos que hayas tenido una buena partida!\n\n" +
             "Saludos,\nEl equipo de eScrim",
             recipient.getUsername(),
             scrim.getJuego() != null ? scrim.getJuego() : "N/A",
-            scrim.getId(), // Incluir ID
+            scrim.getId(),
             mensajeExtra
         );
 
@@ -206,22 +184,21 @@ public class NotificationService {
         logResult("Scrim Finalizado", enviado, scrim.getId(), destinatario);
     }
 
-    /**
-     * Envía notificación de que el Scrim ha sido cancelado.
-     */
+    // Envia notificacion de que el Scrim ha sido cancelado.
+
     public void sendScrimCanceladoNotification(User recipient, Scrim scrim) {
         String destinatario = recipient.getEmail();
         String asunto = "Scrim Cancelado: " + (scrim.getJuego() != null ? scrim.getJuego() : "N/A");
 
         String cuerpo = String.format(
             "Hola %s,\n\n" +
-            "Lamentamos informarte que el scrim de %s (%s) ha sido cancelado por el organizador.\n\n" + // Incluir ID
+            "Lamentamos informarte que el scrim de %s (%s) ha sido cancelado por el organizador.\n\n" +
             "Ya no necesitas participar en esta partida.\n\n" +
             "Puedes buscar otros scrims disponibles en la plataforma.\n\n" +
             "Saludos,\nEl equipo de eScrim",
             recipient.getUsername(),
             scrim.getJuego() != null ? scrim.getJuego() : "N/A",
-            scrim.getId() // Incluir ID
+            scrim.getId()
         );
 
         logger.info("Intentando enviar notificación de Scrim Cancelado a {}", destinatario);
@@ -229,9 +206,35 @@ public class NotificationService {
         logResult("Scrim Cancelado", enviado, scrim.getId(), destinatario);
     }
 
-    // Método helper privado para loguear resultado del envío
+    /**
+     * Envia un recordatorio por email antes de que comience el Scrim.
+     * @param recipient El usuario (organizador o participante) a notificar.
+     * @param scrim El scrim que esta por comenzar.
+     */
+    public void sendScrimReminderNotification(User recipient, Scrim scrim) {
+        String destinatario = recipient.getEmail();
+        String asunto = "¡Recordatorio! Tu Scrim de " + (scrim.getJuego() != null ? scrim.getJuego() : "N/A") + " comienza pronto";
+        String fechaFormateada = scrim.getFechaHora() != null ? scrim.getFechaHora().format(DATE_TIME_FORMATTER) : "muy pronto";
+
+        String cuerpo = String.format(
+            "Hola %s,\n\n" +
+            "¡Esto es un recordatorio de que tu scrim de %s (%s) está programado para comenzar pronto!\n\n" +
+            "Fecha de inicio: %s\n\n" +
+            "¡Asegúrate de estar listo a tiempo!\n\n" +
+            "Saludos,\nEl equipo de eScrim",
+            recipient.getUsername(),
+            scrim.getJuego() != null ? scrim.getJuego() : "N/A",
+            scrim.getId(),
+            fechaFormateada
+        );
+
+        logger.info("Intentando enviar Recordatorio de Scrim a {}", destinatario);
+        boolean enviado = emailNotifier.send(destinatario, asunto, cuerpo);
+        logResult("Recordatorio Scrim", enviado, scrim.getId(), destinatario);
+    }
+
     private void logResult(String notificationType, boolean success, UUID scrimId, String recipientEmail) {
-        String scrimIdStr = scrimId != null ? scrimId.toString() : "N/A"; // Manejar posible null para bienvenida
+        String scrimIdStr = scrimId != null ? scrimId.toString() : "N/A";
         if (success) {
             logger.info("Email de {} ({}) enviado exitosamente a {}", notificationType, scrimIdStr, recipientEmail);
         } else {

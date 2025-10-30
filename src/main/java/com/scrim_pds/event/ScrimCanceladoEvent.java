@@ -3,9 +3,8 @@ package com.scrim_pds.event;
 import com.scrim_pds.model.Scrim;
 import java.util.UUID;
 
-/**
- * Evento que se publica cuando un Scrim pasa al estado CANCELADO.
- */
+// Evento que se publica cuando un Scrim pasa al estado CANCELADO.
+
 public record ScrimCanceladoEvent(
     UUID scrimId,
     String juego,
