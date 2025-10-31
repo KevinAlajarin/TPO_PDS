@@ -3,7 +3,7 @@ package com.scrim_pds.service;
 import com.scrim_pds.dto.EstadisticaRequest;
 import com.scrim_pds.dto.PostulacionRequest;
 import com.scrim_pds.dto.ScrimCreateRequest;
-import com.scrim_pds.event.*; 
+import com.scrim_pds.event.*;
 import com.scrim_pds.exception.InvalidScrimStateException;
 import com.scrim_pds.exception.ScrimNotFoundException;
 import com.scrim_pds.exception.UnauthorizedException;
@@ -11,16 +11,18 @@ import com.scrim_pds.model.Estadistica;
 import com.scrim_pds.model.Postulacion;
 import com.scrim_pds.model.Scrim;
 import com.scrim_pds.model.User;
+import com.scrim_pds.model.enums.Formato;
 import com.scrim_pds.model.enums.PostulacionState;
 import com.scrim_pds.model.enums.ScrimStateEnum;
 import com.scrim_pds.persistence.JsonPersistenceManager;
 import com.scrim_pds.service.UserService;
-import org.springframework.lang.Nullable; 
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.LocalDate; // Importar
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +50,9 @@ public class ScrimService {
         this.userService = userService;
     }
 
-    // Crea un nuevo Scrim y PUBLICA el evento ScrimCreatedEvent.
-
+    /**
+     * Crea un nuevo Scrim y PUBLICA el evento ScrimCreatedEvent.
+     */
     public Scrim createScrim(ScrimCreateRequest dto, User organizador) throws IOException {
         List<Scrim> scrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
 
@@ -69,22 +72,48 @@ public class ScrimService {
         newScrim.setCupo(dto.getCupo());
         newScrim.setMatchmakingStrategyType(dto.getMatchmakingStrategyType());
         newScrim.setEstado(ScrimStateEnum.BUSCANDO);
+        newScrim.setRecordatorioEnviado(false); // Asegurar default
 
         scrims.add(newScrim);
         persistenceManager.writeCollection(SCRIMS_FILE, scrims);
 
+        // --- LOG DE AUDITORIA ---
+        logger.info("[AUDIT] Usuario '{}' (ID: {}) creó Scrim '{}'", organizador.getUsername(), organizador.getId(), newScrim.getId());
+        
         eventBus.publish(new ScrimCreatedEvent(newScrim));
-        logger.info("Scrim {} creado y evento ScrimCreatedEvent publicado.", newScrim.getId());
+        logger.info("Evento ScrimCreatedEvent publicado para Scrim {}.", newScrim.getId()); // Log de evento
 
         return newScrim;
     }
 
-    // Busca scrims con filtros opcionales.
+    // --- NUEVO MÉTODO AÑADIDO PARA iCal ---
+    /**
+     * Busca un Scrim por su ID.
+     * @param scrimId El ID del Scrim.
+     * @return El Scrim encontrado.
+     * @throws ScrimNotFoundException Si no se encuentra.
+     */
+    public Scrim findScrimById(UUID scrimId) throws IOException {
+        // Usamos un ReadLock
+        List<Scrim> scrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
+        return scrims.stream()
+                .filter(s -> s.getId().equals(scrimId))
+                .findFirst()
+                .orElseThrow(() -> new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId));
+    }
 
+
+    /**
+     * Busca scrims con filtros opcionales.
+     * --- MÉTODO MODIFICADO (7 PARÁMETROS) ---
+     */
     public List<Scrim> findScrims(
             Optional<String> juego, Optional<String> region,
             Optional<String> rangoMin, Optional<String> rangoMax,
-            Optional<Integer> latenciaMax) throws IOException {
+            Optional<Integer> latenciaMax,
+            // --- NUEVOS PARÁMETROS ---
+            Optional<Formato> formato,
+            Optional<LocalDate> fecha) throws IOException {
 
         List<Scrim> scrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Stream<Scrim> stream = scrims.stream();
@@ -110,14 +139,27 @@ public class ScrimService {
             String rangoMaxFilter = rangoMax.get();
             stream = stream.filter(s -> s.getRangoMax() != null && s.getRangoMax().equalsIgnoreCase(rangoMaxFilter));
         }
+        
+        // --- NUEVOS FILTROS ---
+        if (formato.isPresent()) {
+            Formato formatoFilter = formato.get();
+            stream = stream.filter(s -> s.getFormato() != null && s.getFormato() == formatoFilter);
+        }
+        if (fecha.isPresent()) {
+            LocalDate fechaFilter = fecha.get();
+            stream = stream.filter(s -> s.getFechaHora() != null &&
+                                        s.getFechaHora().toLocalDate().isEqual(fechaFilter));
+        }
+        // --- FIN NUEVOS FILTROS ---
 
         return stream
                 .filter(s -> s.getEstado() == ScrimStateEnum.BUSCANDO || s.getEstado() == ScrimStateEnum.LOBBY_ARMADO)
                 .collect(Collectors.toList());
     }
 
-    // Permite a un usuario postularse a un Scrim y PUBLICA LobbyArmadoEvent si se llena.
-
+    /**
+     * Permite a un usuario postularse a un Scrim y PUBLICA LobbyArmadoEvent si se llena.
+     */
     public Postulacion postularse(UUID scrimId, PostulacionRequest dto, User jugador) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
@@ -125,12 +167,12 @@ public class ScrimService {
         Scrim scrim = scrimOpt.get();
         if (scrim.getEstado() != ScrimStateEnum.BUSCANDO) { /* ... */ throw new InvalidScrimStateException("No te puedes postular..."); }
         List<Postulacion> postulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
-        boolean yaPostulado = postulaciones.stream()
-                .anyMatch(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId()));
+        boolean yaPostulado = postulaciones.stream().anyMatch(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId()));
         if (yaPostulado) { /* ... */ throw new InvalidScrimStateException("Ya te has postulado..."); }
         if (scrim.getOrganizadorId().equals(jugador.getId())) { /* ... */ throw new InvalidScrimStateException("No te puedes postular..."); }
-
+        
         Postulacion newPostulacion = new Postulacion();
+        // ... (setear campos postulación) ...
         newPostulacion.setId(UUID.randomUUID());
         newPostulacion.setScrimId(scrimId);
         newPostulacion.setUsuarioId(jugador.getId());
@@ -138,19 +180,17 @@ public class ScrimService {
         newPostulacion.setLatenciaReportada(dto.getLatenciaReportada());
         newPostulacion.setFechaPostulacion(LocalDateTime.now());
         newPostulacion.setEstado(PostulacionState.PENDIENTE);
-
+        
         postulaciones.add(newPostulacion);
         
         long postulantesActivos = postulaciones.stream()
-                .filter(p -> p.getScrimId().equals(scrimId) &&
-                             (p.getEstado() == PostulacionState.PENDIENTE || p.getEstado() == PostulacionState.ACEPTADA))
+                .filter(p -> p.getScrimId().equals(scrimId) && (p.getEstado() == PostulacionState.PENDIENTE || p.getEstado() == PostulacionState.ACEPTADA))
                 .count();
-
         boolean cupoLleno = (scrim.getCupo() != null) && (postulantesActivos + 1) >= scrim.getCupo();
-
+        
         persistenceManager.writeCollection(POSTULACIONES_FILE, postulaciones);
         logger.info("[EVENTO] Nueva postulación para Scrim {} por {}", scrim.getId(), jugador.getUsername());
-
+        
         if (cupoLleno && scrim.getEstado() == ScrimStateEnum.BUSCANDO) {
             logger.info("[INFO] Cupo lleno para Scrim {}. Cambiando estado y publicando evento.", scrim.getId());
             scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO);
@@ -159,19 +199,16 @@ public class ScrimService {
                 logger.info("[EVENTO] Scrim cambió a LOBBY_ARMADO (Cupo Lleno): {}", scrim.getId());
                 eventBus.publish(new LobbyArmadoEvent(scrim));
                 logger.info("Evento LobbyArmadoEvent publicado para Scrim {}", scrim.getId());
-            } catch (IOException e) {
-                 logger.error("CRITICAL: Error al guardar {} después de actualizar estado a LOBBY_ARMADO para Scrim {}. Estado podría estar inconsistente.", SCRIMS_FILE, scrimId, e);
-                 scrim.setEstado(ScrimStateEnum.BUSCANDO);
-                 throw e;
-            } catch (Exception e) {
-                 logger.error("Error inesperado al publicar LobbyArmadoEvent para Scrim {}.", scrimId, e);
-            }
+            } catch (IOException e) { /* ... */ scrim.setEstado(ScrimStateEnum.BUSCANDO); throw e; }
+              catch (Exception e) { /* ... */ }
         }
         return newPostulacion;
     }
 
-    // Confirma la participacion y PUBLICA ScrimConfirmadoEvent si todos confirman.
 
+    /**
+     * Confirma la participación y PUBLICA ScrimConfirmadoEvent si todos confirman.
+     */
     public void confirmar(UUID scrimId, User jugador) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
@@ -180,9 +217,7 @@ public class ScrimService {
         if (scrim.getEstado() != ScrimStateEnum.LOBBY_ARMADO) { /* ... */ throw new InvalidScrimStateException("No se puede confirmar..."); }
         
         List<Postulacion> currentPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
-        Optional<Postulacion> postulacionOpt = currentPostulaciones.stream()
-                .filter(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId()))
-                .findFirst();
+        Optional<Postulacion> postulacionOpt = currentPostulaciones.stream().filter(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId())).findFirst();
         if (postulacionOpt.isEmpty()) { /* ... */ throw new InvalidScrimStateException("No se encontró tu postulación..."); }
         Postulacion postulacion = postulacionOpt.get();
         if (postulacion.getEstado() == PostulacionState.RECHAZADA) { /* ... */ throw new InvalidScrimStateException("Tu postulación fue rechazada..."); }
@@ -196,9 +231,7 @@ public class ScrimService {
              logger.info("Jugador {} ya había confirmado para Scrim {}", jugador.getUsername(), scrimId);
         }
 
-        long aceptados = currentPostulaciones.stream()
-                .filter(p -> p.getScrimId().equals(scrimId) && p.getEstado() == PostulacionState.ACEPTADA)
-                .count();
+        long aceptados = currentPostulaciones.stream().filter(p -> p.getScrimId().equals(scrimId) && p.getEstado() == PostulacionState.ACEPTADA).count();
         boolean todosConfirmados = (scrim.getCupo() != null) && (aceptados + 1) >= scrim.getCupo();
 
         if (todosConfirmados && scrim.getEstado() == ScrimStateEnum.LOBBY_ARMADO) {
@@ -208,45 +241,33 @@ public class ScrimService {
                 logger.info("[EVENTO] ¡Todos confirmaron! Scrim cambió a CONFIRMADO: {}", scrim.getId());
                 eventBus.publish(new ScrimConfirmadoEvent(scrim));
                 logger.info("Evento ScrimConfirmadoEvent publicado para Scrim {}", scrim.getId());
-            } catch (IOException e) {
-                 logger.error("CRITICAL: Error al guardar {} después de actualizar estado a CONFIRMADO para Scrim {}.", SCRIMS_FILE, scrimId, e);
-                 scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO);
-                 throw e;
-            } catch (Exception e) {
-                logger.error("Error inesperado al publicar ScrimConfirmadoEvent para Scrim {}", scrimId, e);
-            }
+            } catch (IOException e) { /* ... */ scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO); throw e; }
+              catch (Exception e) { /* ... */ }
         } else if (!wasAlreadyAccepted) {
             logger.info("Aún faltan confirmaciones para Scrim {}. Aceptados: {}/{}", scrimId, aceptados, (scrim.getCupo() != null ? scrim.getCupo() - 1 : "?"));
         }
     }
 
+
     /**
      * Inicia manualmente un Scrim y PUBLICA ScrimIniciadoEvent.
-     * @param scrimId El ID del scrim a iniciar.
-     * @param actor El usuario que realiza la acción (Organizador) o null (Sistema).
      */
-
     public void iniciarScrim(UUID scrimId, @Nullable User actor) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
          
         if (scrimOpt.isEmpty()) {
-             if (actor != null) {
-                 throw new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId);
-             }
+             if (actor != null) { throw new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId); }
              logger.warn("[Scheduler] Scrim {} no encontrado para iniciar (¿ya fue borrado?).", scrimId);
              return;
          }
         Scrim scrim = scrimOpt.get();
-
         if (actor != null && !scrim.getOrganizadorId().equals(actor.getId())) {
             throw new UnauthorizedException("Solo el organizador puede iniciar el scrim.");
         }
-        
         if (scrim.getEstado() != ScrimStateEnum.CONFIRMADO) {
             String actorName = actor != null ? actor.getUsername() : "Scheduler";
             logger.debug("[{}] Scrim {} ya no está CONFIRMADO (Estado: {}). Omitiendo inicio.", actorName, scrimId, scrim.getEstado());
-            
             if (actor != null) {
                  throw new InvalidScrimStateException("Solo se puede iniciar un scrim que esté 'Confirmado' (Estado: " + scrim.getEstado() + ").");
             }
@@ -258,22 +279,17 @@ public class ScrimService {
         try {
             persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
             String actorName = actor != null ? actor.getUsername() : "SISTEMA";
-            logger.info("[EVENTO] Scrim Iniciado: {} (Actor: {})", scrim.getId(), actorName);
-
+            logger.info("[AUDIT] Scrim {} fue INICIADO por Actor: {}", scrim.getId(), actorName);
             eventBus.publish(new ScrimIniciadoEvent(scrim));
             logger.info("Evento ScrimIniciadoEvent publicado para Scrim {}", scrim.getId());
-
-        } catch (IOException e) {
-             logger.error("CRITICAL: Error al guardar {} después de actualizar estado a EN_JUEGO para Scrim {}.", SCRIMS_FILE, scrimId, e);
-             scrim.setEstado(estadoAnterior);
-             throw e;
-        } catch (Exception e) {
-            logger.error("Error inesperado al publicar ScrimIniciadoEvent para Scrim {}", scrimId, e);
-        }
+        } catch (IOException e) { /* ... */ scrim.setEstado(estadoAnterior); throw e; }
+          catch (Exception e) { /* ... */ }
     }
 
-    // Cancela un Scrim y PUBLICA ScrimCanceladoEvent.
 
+    /**
+     * Cancela un Scrim y PUBLICA ScrimCanceladoEvent.
+     */
     public void cancelarScrim(UUID scrimId, User organizador) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
@@ -290,20 +306,16 @@ public class ScrimService {
         scrim.setEstado(ScrimStateEnum.CANCELADO);
         try {
              persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
-             logger.info("[EVENTO] Scrim Cancelado: {}", scrim.getId());
+             logger.info("[AUDIT] Usuario '{}' (ID: {}) canceló Scrim '{}'", organizador.getUsername(), organizador.getId(), scrim.getId());
              eventBus.publish(new ScrimCanceladoEvent(scrim));
              logger.info("Evento ScrimCanceladoEvent publicado para Scrim {}", scrim.getId());
-        } catch (IOException e) {
-             logger.error("CRITICAL: Error al guardar {} ... CANCELADO ...", SCRIMS_FILE, scrimId, e);
-             scrim.setEstado(estadoAnterior);
-             throw e;
-        } catch (Exception e) {
-             logger.error("Error inesperado al publicar ScrimCanceladoEvent...", scrimId, e);
-        }
+        } catch (IOException e) { /* ... */ scrim.setEstado(estadoAnterior); throw e; }
+          catch (Exception e) { /* ... */ }
     }
 
-    // Finaliza un Scrim y PUBLICA ScrimFinalizadoEvent.
-
+    /**
+     * Finaliza un Scrim y PUBLICA ScrimFinalizadoEvent.
+     */
     public void finalizarScrim(UUID scrimId, User organizador) throws IOException {
          List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
@@ -311,24 +323,21 @@ public class ScrimService {
         Scrim scrim = scrimOpt.get();
         if (!scrim.getOrganizadorId().equals(organizador.getId())) { /* ... */ throw new UnauthorizedException("Solo el organizador..."); }
         if (scrim.getEstado() != ScrimStateEnum.EN_JUEGO && scrim.getEstado() != ScrimStateEnum.CONFIRMADO) { /* ... */ throw new InvalidScrimStateException("Solo se puede finalizar...");}
+        
         ScrimStateEnum estadoAnterior = scrim.getEstado();
         scrim.setEstado(ScrimStateEnum.FINALIZADO);
         try {
             persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
-            logger.info("[EVENTO] Scrim Finalizado: {}", scrim.getId());
+            logger.info("[AUDIT] Usuario '{}' (ID: {}) finalizó Scrim '{}'", organizador.getUsername(), organizador.getId(), scrim.getId());
             eventBus.publish(new ScrimFinalizadoEvent(scrim));
             logger.info("Evento ScrimFinalizadoEvent publicado para Scrim {}", scrim.getId());
-        } catch (IOException e) {
-             logger.error("CRITICAL: Error al guardar {} ... FINALIZADO ...", SCRIMS_FILE, scrimId, e);
-             scrim.setEstado(estadoAnterior);
-             throw e;
-        } catch (Exception e) {
-             logger.error("Error inesperado al publicar ScrimFinalizadoEvent...", scrimId, e);
-        }
+        } catch (IOException e) { /* ... */ scrim.setEstado(estadoAnterior); throw e; }
+          catch (Exception e) { /* ... */ }
     }
 
-    // Guarda las estadisticas para un Scrim finalizado.
-
+    /**
+     * Guarda las estadísticas para un Scrim finalizado.
+     */
     public void guardarEstadisticas(UUID scrimId, List<EstadisticaRequest> statsRequests, User organizador) throws IOException {
         List<Scrim> scrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Scrim scrim = scrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst()
@@ -351,6 +360,7 @@ public class ScrimService {
                  continue;
              }
             Estadistica stat = new Estadistica();
+            // ... (copiar datos) ...
             stat.setId(UUID.randomUUID());
             stat.setScrimId(scrimId);
             stat.setUsuarioId(req.getUsuarioId());
@@ -365,19 +375,19 @@ public class ScrimService {
         if (!newStats.isEmpty()) {
             allStats.addAll(newStats);
             persistenceManager.writeCollection(ESTADISTICAS_FILE, allStats);
-            logger.info("[INFO] {} nuevas estadísticas guardadas para Scrim: {}", newStats.size(), scrim.getId());
+            logger.info("[AUDIT] Usuario '{}' (ID: {}) guardó {} entradas de estadísticas para Scrim '{}'", 
+                        organizador.getUsername(), organizador.getId(), newStats.size(), scrimId);
         } else {
              logger.warn("[WARN] No se guardaron estadísticas para Scrim {} (lista vacía o datos inválidos).", scrimId);
         }
     }
 
 
-    // Busca scrims que estan confirmados y cuya hora de inicio ya paso.
-
+    // --- MÉTODOS DEL SCHEDULER ---
+    
     public List<Scrim> findScrimsToAutoStart() throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         LocalDateTime now = LocalDateTime.now();
-        
         return currentScrims.stream()
                 .filter(s -> s.getEstado() == ScrimStateEnum.CONFIRMADO &&
                              s.getFechaHora() != null &&
@@ -388,52 +398,47 @@ public class ScrimService {
     /**
      * Busca scrims confirmados que están por empezar (para enviar recordatorios)
      * Y QUE NO HAN SIDO NOTIFICADOS.
-     * @param soon_hours Horas antes del inicio (ej. 2)
+     * --- MÉTODO MODIFICADO ---
      */
-    public List<Scrim> findScrimsForReminder(int soon_hours) throws IOException { // <-- Parámetro interval_minutes eliminado
+    public List<Scrim> findScrimsForReminder(int soon_hours) throws IOException { // <-- Firma corregida (1 parámetro)
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime reminderWindowEnd = now.plusHours(soon_hours);
-
         return currentScrims.stream()
                 .filter(s -> s.getEstado() == ScrimStateEnum.CONFIRMADO &&
-                             !s.isRecordatorioEnviado() && 
+                             !s.isRecordatorioEnviado() && // <-- Lógica corregida
                              s.getFechaHora() != null &&
-                             s.getFechaHora().isAfter(now) && 
+                             s.getFechaHora().isAfter(now) &&
                              s.getFechaHora().isBefore(reminderWindowEnd))
                 .collect(Collectors.toList());
     }
 
-
-    // Busca todos los participantes de un Scrim (Organizador + Aceptados).
-
+    /**
+     * Busca todos los participantes de un Scrim (Organizador + Aceptados).
+     */
     public List<User> findParticipantsForScrim(UUID scrimId, UUID organizadorId) throws IOException {
         List<User> participants = new ArrayList<>();
-        
-        // 1. Añadir Organizador
         userService.findUserById(organizadorId).ifPresent(participants::add);
-
-        // 2. Añadir Postulantes Aceptados
         List<Postulacion> postulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
         postulaciones.stream()
                 .filter(p -> p.getScrimId().equals(scrimId) && p.getEstado() == PostulacionState.ACEPTADA)
                 .forEach(p -> userService.findUserById(p.getUsuarioId()).ifPresent(participants::add));
-                
         return participants.stream().distinct().collect(Collectors.toList());
     }
     
-    // Marca un scrim como "recordatorio enviado" para evitar spam.
-
+    /**
+     * Marca un scrim como "recordatorio enviado" para evitar spam.
+     * --- MÉTODO AÑADIDO ---
+     */
     public void marcarRecordatorioComoEnviado(UUID scrimId) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
-        
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
         if (scrimOpt.isPresent()) {
             Scrim scrim = scrimOpt.get();
             if (!scrim.isRecordatorioEnviado()) {
-                scrim.setRecordatorioEnviado(true); 
+                scrim.setRecordatorioEnviado(true);
                 try {
-                    persistenceManager.writeCollection(SCRIMS_FILE, currentScrims); 
+                    persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
                     logger.info("[Scheduler] Flag 'recordatorioEnviado' seteado para Scrim {}", scrimId);
                 } catch (IOException e) {
                      logger.error("[Scheduler] CRITICAL: Error al guardar flag de recordatorio para Scrim {}. Podrían enviarse duplicados.", scrimId, e);

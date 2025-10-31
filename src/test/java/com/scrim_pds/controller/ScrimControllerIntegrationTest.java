@@ -87,7 +87,7 @@ public class ScrimControllerIntegrationTest {
     void getScrims_shouldReturnOkAndEmptyList_whenNoFilters() throws Exception {
         // Arrange
         // Simular que el servicio no encuentra scrims
-        when(scrimService.findScrims(any(), any(), any(), any(), any()))
+        when(scrimService.findScrims(any(), any(), any(), any(), any(), any(), any()))
             .thenReturn(Collections.emptyList());
         
         // Act & Assert

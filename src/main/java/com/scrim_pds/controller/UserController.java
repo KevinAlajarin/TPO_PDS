@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory; 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,6 +26,9 @@ import java.io.IOException;
 @RequestMapping("/api/users")
 @Tag(name = "User", description = "Endpoints para gestionar perfiles y preferencias de usuario")
 public class UserController {
+
+    // ---LOGGER ---
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
     private final UserService userService;
 
@@ -35,29 +40,27 @@ public class UserController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Perfil del usuario",
                          content = @Content(mediaType = "application/json",
-                         schema = @Schema(implementation = User.class))), // Devuelve el User completo
+                         schema = @Schema(implementation = User.class))),
             @ApiResponse(responseCode = "401", description = "Token inválido o faltante")
     })
     @GetMapping("/me")
     public ResponseEntity<User> getMyProfile(
-            @Parameter(hidden = true) // Ocultar de Swagger
+            @Parameter(hidden = true)
             @AuthUser User authenticatedUser
     ) {
-        // @AuthUser ya busco al usuario, asi que podemos devolverlo directamente.
-        // No necesitamos quitar el hash de la contraseña porque el @AuthUser
-        // no lo incluye si lo filtramos (aunque nuestro DTO LoginResponse sí lo filtra).
-        // Por seguridad, es mejor devolver solo un DTO de respuesta.
-        // Pero por simplicidad, devolvemos el objeto User (sin el hash).
-        authenticatedUser.setPasswordHash(null); // ¡Nunca devolver el hash!
+        // --- LOG DE AUDITORÍA ---
+        logger.info("[AUDIT] Usuario '{}' (ID: {}) consulto su propio perfil (/me).", authenticatedUser.getUsername(), authenticatedUser.getId());
+        
+        authenticatedUser.setPasswordHash(null); 
         return ResponseEntity.ok(authenticatedUser);
     }
 
 
-    @Operation(summary = "Actualizar el perfil público del usuario autenticado", security = @SecurityRequirement(name = "bearerAuth"))
+    @Operation(summary = "Actualizar el perfil publico del usuario autenticado", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Perfil actualizado",
                          content = @Content(mediaType = "application/json",
-                         schema = @Schema(implementation = User.class))), // Devuelve User actualizado
+                         schema = @Schema(implementation = User.class))),
             @ApiResponse(responseCode = "400", description = "Datos inválidos (ej. username corto)"),
             @ApiResponse(responseCode = "401", description = "Token inválido o faltante"),
             @ApiResponse(responseCode = "409", description = "Conflicto (ej. username ya existe)")
@@ -70,7 +73,12 @@ public class UserController {
     ) throws IOException {
 
         User updatedUser = userService.updateUserProfile(authenticatedUser.getId(), dto);
-        updatedUser.setPasswordHash(null); // Quitar hash antes de devolver
+        
+        // --- LOG DE AUDITORÍA ---
+        // (Loguear DESPUES de que la operacion del servicio fue exitosa)
+        logger.info("[AUDIT] Usuario '{}' (ID: {}) actualizo su perfil. Nuevo username: {}", authenticatedUser.getUsername(), authenticatedUser.getId(), dto.getUsername());
+
+        updatedUser.setPasswordHash(null); 
         return ResponseEntity.ok(updatedUser);
     }
 
@@ -90,8 +98,11 @@ public class UserController {
     ) throws IOException {
 
         PreferenciasUsuario updatedPreferences = userService.updateUserPreferences(authenticatedUser.getId(), dto);
+
+        // --- LOG DE AUDITORÍA ---
+        logger.info("[AUDIT] Usuario '{}' (ID: {}) actualizo sus preferencias. Alertas Scrim: {}", authenticatedUser.getUsername(), authenticatedUser.getId(), dto.getAlertasScrim());
+
         return ResponseEntity.ok(updatedPreferences);
     }
 }
 
-      
