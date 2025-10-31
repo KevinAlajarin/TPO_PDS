@@ -1,1 +1,18 @@
-[ ]
+[ {
+  "id" : "21318df7-5f3d-4d8f-a447-7b4a3c5b99e2",
+  "juego" : "Valorant",
+  "formato" : "FORMATO_1V1",
+  "region" : "LATAM",
+  "rangoMin" : "Oro",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-10-31T17:53:14.095",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "e701ac24-b5bd-4e3c-a6cd-03d4ebefa79b",
+  "estado" : "CONFIRMADO",
+  "descripcion" : "Scrim de práctica para torneo",
+  "cupo" : 2,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : true
+} ]

@@ -1,6 +1,7 @@
 package com.scrim_pds.persistence;
 
-import com.fasterxml.jackson.databind.ObjectMapper; 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
- // Gestiona la persistencia de colecciones de objetos en archivos JSON.
-
+/**
+ * Gestiona la persistencia de colecciones de objetos en archivos JSON.
+ * Proporciona concurrencia (locking por archivo) y escrituras atómicas.
+ */
 @Component
 public class JsonPersistenceManager {
 
@@ -32,16 +35,19 @@ public class JsonPersistenceManager {
     private final ObjectMapper objectMapper;
     private final Path dataDirectory;
 
+    // Un mapa de locks, uno para cada archivo JSON, para manejar concurrencia
     private final Map<String, ReentrantReadWriteLock> locks = new ConcurrentHashMap<>();
 
     // Lista de todos los archivos JSON que usará la aplicación
+    // --- MODIFICADO ---
     private static final List<String> REQUIRED_FILES = List.of(
             "users.json",
             "sessions.json",
             "scrims.json",
             "postulaciones.json",
             "estadisticas.json",
-            "verifications.json"
+            "verifications.json",
+            "feedback.json" // <-- AÑADIDO
     );
 
     public JsonPersistenceManager(ObjectMapper objectMapper, @Value("${data.directory}") String dataDirPath) {
@@ -49,6 +55,9 @@ public class JsonPersistenceManager {
         this.dataDirectory = Paths.get(dataDirPath);
     }
 
+    /**
+     * Se asegura de que el directorio 'data/' exista al iniciar la aplicación.
+     */
     @PostConstruct
     public void init() {
         try {
@@ -81,10 +90,16 @@ public class JsonPersistenceManager {
         }
     }
 
+    /**
+     * Obtiene el lock para un nombre de archivo, creándolo si no existe.
+     */
     private ReentrantReadWriteLock getLock(String fileName) {
         return locks.computeIfAbsent(fileName, k -> new ReentrantReadWriteLock());
     }
 
+    /**
+     * Resuelve la ruta completa de un archivo en el directorio 'data/'.
+     */
     private Path getFilePath(String fileName) {
         // Sanitización simple para evitar Path Traversal
         if (fileName.contains("..") || fileName.contains("/") || fileName.contains("\\")) {
@@ -179,3 +194,4 @@ public class JsonPersistenceManager {
         }
     }
 }
+

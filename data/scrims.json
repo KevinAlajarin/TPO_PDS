@@ -10,9 +10,9 @@
   "duracion" : 60,
   "modalidad" : "RANKED",
   "organizadorId" : "e701ac24-b5bd-4e3c-a6cd-03d4ebefa79b",
-  "estado" : "BUSCANDO",
+  "estado" : "FINALIZADO",
   "descripcion" : "Scrim de práctica para torneo",
   "cupo" : 2,
   "matchmakingStrategyType" : "BY_MMR",
-  "recordatorioEnviado" : false
+  "recordatorioEnviado" : true
 } ]

@@ -16,7 +16,7 @@
     "busquedaRangoMinPorDefecto" : "Oro",
     "busquedaRangoMaxPorDefecto" : "Diamante"
   },
-  "rol" : "USER",
+  "rol" : "ADMIN",
   "strikes" : 0,
   "cooldownHasta" : null,
   "estadoVerificacion" : "VERIFICADO"

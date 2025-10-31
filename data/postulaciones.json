@@ -1,1 +1,9 @@
-[ ]
+[ {
+  "id" : "155417d4-2ea9-428d-bd14-b4349c7a11da",
+  "usuarioId" : "f4da4253-37e7-4dfb-89f0-1ca19b4d8855",
+  "scrimId" : "21318df7-5f3d-4d8f-a447-7b4a3c5b99e2",
+  "rolDeseado" : "Jugador",
+  "estado" : "ACEPTADA",
+  "latenciaReportada" : 10,
+  "fechaPostulacion" : "2025-10-31T17:47:34.4980635"
+} ]
