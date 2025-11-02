@@ -15,4 +15,21 @@
   "cupo" : 2,
   "matchmakingStrategyType" : "BY_MMR",
   "recordatorioEnviado" : true
+}, {
+  "id" : "a5d498aa-929d-403d-a386-a64280cdbc20",
+  "juego" : "FIFA",
+  "formato" : "FORMATO_1V1",
+  "region" : "LATAM",
+  "rangoMin" : "ELITE",
+  "rangoMax" : "ELITE",
+  "latenciaMax" : 60,
+  "fechaHora" : "2025-11-01T19:57:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "68283056-fb7b-4f9f-b48e-03f4458d99f9",
+  "estado" : "BUSCANDO",
+  "descripcion" : "Torneo de amigos",
+  "cupo" : 10,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
 } ]

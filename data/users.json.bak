@@ -16,18 +16,21 @@
     "busquedaRangoMinPorDefecto" : "Oro",
     "busquedaRangoMaxPorDefecto" : "Diamante"
   },
-  "rol" : "USER",
+  "rol" : "ADMIN",
   "strikes" : 0,
   "cooldownHasta" : null,
   "estadoVerificacion" : "VERIFICADO"
 }, {
   "id" : "f4da4253-37e7-4dfb-89f0-1ca19b4d8855",
-  "username" : "Vicente",
+  "username" : "Matiasr",
   "email" : "reguetonmierda@gmail.com",
   "passwordHash" : "$2a$10$q1wHyeU2UOySgKqaHA5wQub8aZzeZFwFLj0DPklv2Hhx8yy5HUryG",
-  "rangoPorJuego" : null,
-  "rolesPreferidos" : null,
-  "region" : null,
+  "rangoPorJuego" : {
+    "Valorant" : "Diamante",
+    "LoL" : "Oro"
+  },
+  "rolesPreferidos" : [ "Duelista", "Iniciador" ],
+  "region" : "SA (South America)",
   "preferencias" : {
     "canalesNotificacion" : [ "EMAIL", "PUSH" ],
     "alertasScrim" : true,
