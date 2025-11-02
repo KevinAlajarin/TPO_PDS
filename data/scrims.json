@@ -32,4 +32,38 @@
   "cupo" : 10,
   "matchmakingStrategyType" : "BY_MMR",
   "recordatorioEnviado" : false
+}, {
+  "id" : "2eab50e2-106a-4969-83ba-980e72016be7",
+  "juego" : "Valorant",
+  "formato" : "FORMATO_5V5",
+  "region" : "LATAM",
+  "rangoMin" : "Oro",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-11-02T16:00:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "68283056-fb7b-4f9f-b48e-03f4458d99f9",
+  "estado" : "BUSCANDO",
+  "descripcion" : "Torneo de valorant 1",
+  "cupo" : 10,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
+}, {
+  "id" : "8f441300-83c4-4245-a1dc-e9d9ceaa9af6",
+  "juego" : "CS2",
+  "formato" : "FORMATO_1V1",
+  "region" : "SA",
+  "rangoMin" : "Plata",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-11-02T17:15:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "68283056-fb7b-4f9f-b48e-03f4458d99f9",
+  "estado" : "BUSCANDO",
+  "descripcion" : "torneo de cs2",
+  "cupo" : 10,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
 } ]

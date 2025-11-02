@@ -1,8 +1,6 @@
 package com.scrim_pds.service;
 
-import com.scrim_pds.dto.EstadisticaRequest;
-import com.scrim_pds.dto.PostulacionRequest;
-import com.scrim_pds.dto.ScrimCreateRequest;
+import com.scrim_pds.dto.*;
 import com.scrim_pds.event.*;
 import com.scrim_pds.exception.InvalidScrimStateException;
 import com.scrim_pds.exception.ScrimNotFoundException;
@@ -30,6 +28,24 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Set;
+import java.util.Comparator;
+
+import com.scrim_pds.dto.PostulacionResponse; // <-- 1. Importar el DTO nuevo
+import com.scrim_pds.model.enums.PostulacionState; // <-- 2. Importar el Enum
+import com.scrim_pds.exception.UnauthorizedException; // <-- 3. Importar excepción
+
+import java.util.ArrayList; // <-- 4. Asegúrate de tener estos imports
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.Comparator;
+import com.scrim_pds.dto.MyScrimResponse;
+import com.scrim_pds.model.enums.PostulacionState;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.Comparator;
 
 @Service
 public class ScrimService {
@@ -92,6 +108,7 @@ public class ScrimService {
      * @param scrimId El ID del Scrim.
      * @return El Scrim encontrado.
      * @throws ScrimNotFoundException Si no se encuentra.
+     *
      */
     public Scrim findScrimById(UUID scrimId) throws IOException {
         // Usamos un ReadLock
@@ -451,5 +468,131 @@ public class ScrimService {
             logger.warn("[Scheduler] No se pudo encontrar Scrim {} para marcar recordatorio (¿fue borrado?).", scrimId);
         }
     }
+    public List<MyScrimResponse> findMyScrims(User user) throws IOException {
+        List<Scrim> allScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
+        List<Postulacion> allPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+
+        // 1. Crear un Mapa de (ScrimID -> EstadoPostulacion) para este usuario
+        Map<UUID, PostulacionState> postulacionesMap = allPostulaciones.stream()
+                .filter(p -> p.getUsuarioId().equals(user.getId()))
+                .collect(Collectors.toMap(
+                        Postulacion::getScrimId,
+                        Postulacion::getEstado,
+                        (estadoExistente, estadoNuevo) -> estadoExistente // Manejo de duplicados
+                ));
+
+        // 2. Filtrar la lista completa de Scrims y crear el DTO
+        return allScrims.stream()
+                .filter(scrim ->
+                        // Es el organizador
+                        scrim.getOrganizadorId().equals(user.getId()) ||
+                                // O está en el mapa de postulados
+                                postulacionesMap.containsKey(scrim.getId())
+                )
+                .map(scrim -> {
+                    // Si es el organizador, el estado de postulación es null.
+                    // Si no, busca el estado en el mapa.
+                    PostulacionState state = scrim.getOrganizadorId().equals(user.getId())
+                            ? null
+                            : postulacionesMap.get(scrim.getId());
+                    return new MyScrimResponse(scrim, state);
+                })
+                .sorted(Comparator.comparing((MyScrimResponse res) -> res.getScrim().getFechaHora()).reversed())
+                .collect(Collectors.toList());
+    }
+    /**
+     * Obtiene todas las postulaciones para un scrim específico.
+     * @param scrimId El ID del scrim.
+     * @return Lista de postulaciones.
+     */
+// --- 5. MODIFICAR ESTE MÉTODO ---
+
+    /**
+     * Obtiene todas las postulaciones para un scrim específico, CON USERNAME.
+     * @param scrimId El ID del scrim.
+     * @return Lista de PostulacionResponse (DTO con username).
+     */
+    public List<PostulacionResponse> getPostulacionesForScrim(UUID scrimId) throws IOException {
+        List<Postulacion> allPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+
+        return allPostulaciones.stream()
+                .filter(p -> p.getScrimId().equals(scrimId))
+                .sorted(Comparator.comparing(Postulacion::getFechaPostulacion))
+                .map(postulacion -> {
+                    // Por cada postulación, buscamos el User para sacar el username
+                    User user = userService.findUserById(postulacion.getUsuarioId()).orElse(null);
+                    // Creamos el DTO de respuesta
+                    return new PostulacionResponse(postulacion, user);
+                })
+                .collect(Collectors.toList());
+    }
+
+    // --- 6. AÑADIR NUEVOS MÉTODOS PARA ACEPTAR/RECHAZAR ---
+
+    /**
+     * Acepta la postulación de un jugador.
+     * @param scrimId El ID del scrim
+     * @param postulacionId El ID de la postulación
+     * @param organizador El usuario (autenticado) que realiza la acción
+     */
+    public void aceptarPostulacion(UUID scrimId, UUID postulacionId, User organizador) throws IOException {
+        Scrim scrim = findScrimById(scrimId); // Lanza ScrimNotFoundException si no existe
+
+        // Seguridad: Solo el organizador puede aceptar
+        if (!scrim.getOrganizadorId().equals(organizador.getId())) {
+            throw new UnauthorizedException("Solo el organizador puede aceptar postulaciones.");
+        }
+
+        // Lógica
+        List<Postulacion> allPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+
+        Optional<Postulacion> postulacionOpt = allPostulaciones.stream()
+                .filter(p -> p.getId().equals(postulacionId) && p.getScrimId().equals(scrimId))
+                .findFirst();
+
+        if (postulacionOpt.isEmpty()) {
+            throw new ScrimNotFoundException("Postulación no encontrada.");
+        }
+
+        Postulacion postulacion = postulacionOpt.get();
+        postulacion.setEstado(PostulacionState.ACEPTADA); // Cambiar estado
+
+        persistenceManager.writeCollection(POSTULACIONES_FILE, allPostulaciones);
+        logger.info("[AUDIT] Organizador {} aceptó postulación {}", organizador.getId(), postulacionId);
+
+        // TODO: Aquí se podría checkear si el lobby se llenó y publicar un Evento
+    }
+
+    /**
+     * Rechaza la postulación de un jugador.
+     * @param scrimId El ID del scrim
+     * @param postulacionId El ID de la postulación
+     * @param organizador El usuario (autenticado) que realiza la acción
+     */
+    public void rechazarPostulacion(UUID scrimId, UUID postulacionId, User organizador) throws IOException {
+        Scrim scrim = findScrimById(scrimId); // Lanza ScrimNotFoundException si no existe
+
+        if (!scrim.getOrganizadorId().equals(organizador.getId())) {
+            throw new UnauthorizedException("Solo el organizador puede rechazar postulaciones.");
+        }
+
+        List<Postulacion> allPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+
+        Optional<Postulacion> postulacionOpt = allPostulaciones.stream()
+                .filter(p -> p.getId().equals(postulacionId) && p.getScrimId().equals(scrimId))
+                .findFirst();
+
+        if (postulacionOpt.isEmpty()) {
+            throw new ScrimNotFoundException("Postulación no encontrada.");
+        }
+
+        Postulacion postulacion = postulacionOpt.get();
+        postulacion.setEstado(PostulacionState.RECHAZADA); // Cambiar estado
+
+        persistenceManager.writeCollection(POSTULACIONES_FILE, allPostulaciones);
+        logger.info("[AUDIT] Organizador {} rechazó postulación {}", organizador.getId(), postulacionId);
+    }
+    // --- FIN DE NUEVOS MÉTODOS ---
 }
+
 

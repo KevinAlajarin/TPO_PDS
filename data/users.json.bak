@@ -45,4 +45,26 @@
   "strikes" : 0,
   "cooldownHasta" : null,
   "estadoVerificacion" : "VERIFICADO"
+}, {
+  "id" : "68283056-fb7b-4f9f-b48e-03f4458d99f9",
+  "username" : "franco",
+  "email" : "fvasquez@uade.edu.ar",
+  "passwordHash" : "$2a$10$UMZ07t543sNj1RjqVQihiu.tjksqizLpMVD.jDJyGhlkTB2FErQWS",
+  "rangoPorJuego" : null,
+  "rolesPreferidos" : null,
+  "region" : null,
+  "preferencias" : {
+    "canalesNotificacion" : [ "EMAIL", "PUSH" ],
+    "alertasScrim" : true,
+    "alertasPostulacion" : true,
+    "recordatoriosActivos" : true,
+    "busquedaJuegoPorDefecto" : "Valorant",
+    "busquedaRegionPorDefecto" : "LATAM",
+    "busquedaRangoMinPorDefecto" : "Oro",
+    "busquedaRangoMaxPorDefecto" : "Diamante"
+  },
+  "rol" : "USER",
+  "strikes" : 0,
+  "cooldownHasta" : null,
+  "estadoVerificacion" : "PENDIENTE"
 } ]

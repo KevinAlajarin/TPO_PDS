@@ -4,11 +4,15 @@ import com.scrim_pds.adapter.ICalAdapter; // <-- AÑADIDO IMPORT
 import com.scrim_pds.config.AuthUser;
 import com.scrim_pds.dto.EstadisticaRequest;
 import com.scrim_pds.dto.PostulacionRequest;
+import com.scrim_pds.dto.PostulacionResponse;
 import com.scrim_pds.dto.ScrimCreateRequest;
+import com.scrim_pds.exception.UnauthorizedException;
 import com.scrim_pds.model.Postulacion;
 import com.scrim_pds.model.Scrim;
 import com.scrim_pds.model.User;
 import com.scrim_pds.service.ScrimService;
+import com.scrim_pds.config.AuthUser;
+import com.scrim_pds.model.User;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders; // <-- AÑADIDO IMPORT
 import org.springframework.http.HttpStatus;
@@ -33,6 +37,9 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Collections;
+import java.util.Optional;
+import com.scrim_pds.dto.MyScrimResponse; // <-- AÑADIR IMPORT
 
 @RestController
 @RequestMapping("/api/scrims")
@@ -245,5 +252,131 @@ public class ScrimController {
         scrimService.guardarEstadisticas(scrimId, estadisticas, organizador);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+    // --- AÑADIR ESTE NUEVO ENDPOINT ---
+    @Operation(summary = "Listar los scrims del usuario (organizados y postulados)", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de scrims del usuario",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "array", implementation = Scrim.class))),
+            @ApiResponse(responseCode = "401", description = "Token inválido o faltante")
+    })
+    @GetMapping("/my-scrims") // <-- Esta es la ruta que faltaba
+    public ResponseEntity<List<MyScrimResponse>> getMyScrims( // <-- CAMBIO DE TIPO DE RETORNO
+                                                              @Parameter(hidden = true)
+                                                              @AuthUser User authenticatedUser
+    ) throws IOException {
+
+        List<MyScrimResponse> myScrims = scrimService.findMyScrims(authenticatedUser); // El servicio ya devuelve el DTO
+        return ResponseEntity.ok(myScrims);
+    }
+    // --- FIN DEL NUEVO ENDPOINT ---
+
+    // --- AÑADIR ESTE NUEVO ENDPOINT ---
+
+    @Operation(summary = "Obtener los detalles de un scrim específico por ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Detalles del Scrim",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Scrim.class))),
+            @ApiResponse(responseCode = "404", description = "Scrim no encontrado")
+    })
+    @GetMapping("/{id}") // <-- Esta es la ruta que faltaba
+    public ResponseEntity<Scrim> getScrimById(
+            @Parameter(description = "ID del scrim a buscar")
+            @PathVariable("id") UUID scrimId
+    ) throws IOException {
+
+        // Usamos el método que ya existía en tu ScrimService
+        Scrim scrim = scrimService.findScrimById(scrimId);
+        return ResponseEntity.ok(scrim);
+    }
+    // --- FIN DEL NUEVO ENDPOINT ---
+
+    // --- AÑADIR ESTE NUEVO ENDPOINT (ANTES O DESPUÉS DEL POST A LA MISMA RUTA) ---
+
+    @Operation(summary = "Listar todas las postulaciones para un scrim (Solo Organizador)", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de postulaciones",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "array", implementation = Postulacion.class))),
+            @ApiResponse(responseCode = "401", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Scrim no encontrado")
+    })
+    @GetMapping("/{id}/postulaciones") // <-- Esta es la ruta GET que faltaba
+
+
+// --- 5. CAMBIO DE TIPO DE RETORNO ---
+    public ResponseEntity<List<PostulacionResponse>> getPostulaciones(
+            @Parameter(description = "ID del scrim") @PathVariable("id") UUID scrimId,
+            @Parameter(hidden = true) @AuthUser User authenticatedUser
+    ) throws IOException {
+
+        // 1. Cargamos el scrim y TODAS las postulaciones (con usernames)
+        Scrim scrim = scrimService.findScrimById(scrimId);
+        List<PostulacionResponse> postulaciones = scrimService.getPostulacionesForScrim(scrimId);
+
+        // 2. Chequeamos si es el organizador
+        boolean isOrganizador = scrim.getOrganizadorId().equals(authenticatedUser.getId());
+
+        if (isOrganizador) {
+            // El organizador ve la lista completa
+            return ResponseEntity.ok(postulaciones);
+        } else {
+            // Un jugador normal SOLO debe ver su propia postulación.
+            // Buscamos su postulación en la lista.
+            Optional<PostulacionResponse> myPostulacion = postulaciones.stream()
+                    .filter(p -> p.getUsuarioId().equals(authenticatedUser.getId()))
+                    .findFirst();
+
+            // Si la encontramos, devolvemos una lista con SÓLO ese item.
+            // Si no (porque no aplicó), devolvemos una lista vacía.
+            if (myPostulacion.isPresent()) {
+                return ResponseEntity.ok(Collections.singletonList(myPostulacion.get()));
+            } else {
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+        }
+    }
+
+    // --- 6. AÑADIR NUEVOS ENDPOINTS ---
+
+    @Operation(summary = "Aceptar una postulación (Solo Organizador)", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Postulación Aceptada"),
+            @ApiResponse(responseCode = "401", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Scrim o Postulación no encontrada")
+    })
+    @PostMapping("/{id}/postulaciones/{postulacionId}/aceptar")
+    public ResponseEntity<Void> aceptarPostulacion(
+            @Parameter(description = "ID del scrim") @PathVariable("id") UUID scrimId,
+            @Parameter(description = "ID de la postulación") @PathVariable("postulacionId") UUID postulacionId,
+            @Parameter(hidden = true) @AuthUser User organizador
+    ) throws IOException {
+
+        scrimService.aceptarPostulacion(scrimId, postulacionId, organizador);
+        return ResponseEntity.ok().build();
+    }
+
+
+    @Operation(summary = "Rechazar una postulación (Solo Organizador)", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Postulación Rechazada"),
+            @ApiResponse(responseCode = "401", description = "No autorizado"),
+            @ApiResponse(responseCode = "404", description = "Scrim o Postulación no encontrada")
+    })
+    @PostMapping("/{id}/postulaciones/{postulacionId}/rechazar")
+    public ResponseEntity<Void> rechazarPostulacion(
+            @Parameter(description = "ID del scrim") @PathVariable("id") UUID scrimId,
+            @Parameter(description = "ID de la postulación") @PathVariable("postulacionId") UUID postulacionId,
+            @Parameter(hidden = true) @AuthUser User organizador
+    ) throws IOException {
+
+        scrimService.rechazarPostulacion(scrimId, postulacionId, organizador);
+        return ResponseEntity.ok().build();
+    }
+    // --- FIN DE NUEVOS ENDPOINTS ---
+
+
 }
 

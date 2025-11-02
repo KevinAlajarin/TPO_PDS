@@ -63,6 +63,28 @@
     "busquedaRangoMinPorDefecto" : "Oro",
     "busquedaRangoMaxPorDefecto" : "Diamante"
   },
+  "rol" : "ADMIN",
+  "strikes" : 0,
+  "cooldownHasta" : null,
+  "estadoVerificacion" : "PENDIENTE"
+}, {
+  "id" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "username" : "Pepe",
+  "email" : "pepe@example.com",
+  "passwordHash" : "$2a$10$8bpflrp.0mn.ZvWVMAxFReH.QOdGq41Bhr6ST7LxrxlxWv8I0SVZK",
+  "rangoPorJuego" : null,
+  "rolesPreferidos" : null,
+  "region" : null,
+  "preferencias" : {
+    "canalesNotificacion" : [ "EMAIL" ],
+    "alertasScrim" : true,
+    "alertasPostulacion" : true,
+    "recordatoriosActivos" : true,
+    "busquedaJuegoPorDefecto" : "Valorant",
+    "busquedaRegionPorDefecto" : "LATAM",
+    "busquedaRangoMinPorDefecto" : "Oro",
+    "busquedaRangoMaxPorDefecto" : "Diamante"
+  },
   "rol" : "USER",
   "strikes" : 0,
   "cooldownHasta" : null,
