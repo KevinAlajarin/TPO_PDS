@@ -16,4 +16,22 @@
   "deaths" : 0,
   "assists" : 0,
   "observaciones" : "flojo"
+}, {
+  "id" : "f350707b-a72c-454f-b5d0-4818fbfed969",
+  "scrimId" : "a24d1825-eb9c-42ac-8c29-0cf8f638861f",
+  "usuarioId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "mvp" : false,
+  "kills" : 6,
+  "deaths" : 0,
+  "assists" : 0,
+  "observaciones" : ""
+}, {
+  "id" : "66d6e377-4659-4f72-a55f-9c86c72a6021",
+  "scrimId" : "a24d1825-eb9c-42ac-8c29-0cf8f638861f",
+  "usuarioId" : "53292e39-d4f5-4ed2-8d63-f40aeac34732",
+  "mvp" : false,
+  "kills" : 0,
+  "deaths" : 2,
+  "assists" : 0,
+  "observaciones" : ""
 } ]

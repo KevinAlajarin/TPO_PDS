@@ -51,7 +51,7 @@ public class FeedbackController {
             @Parameter(hidden = true) @AuthUser User reviewer,
             @Valid @RequestBody FeedbackCreateRequest dto
     ) throws IOException {
-        
+
         Feedback newFeedback = feedbackService.createFeedback(scrimId, reviewer, dto);
         return new ResponseEntity<>(newFeedback, HttpStatus.CREATED);
     }
@@ -88,7 +88,7 @@ public class FeedbackController {
         if (admin.getRol() != UserRole.ADMIN) {
             throw new FeedbackNotAllowedException("No tienes permisos de administrador."); // Reusamos 403
         }
-        
+
         List<Feedback> feedbackList = feedbackService.getPendingFeedback();
         return ResponseEntity.ok(feedbackList);
     }
@@ -107,7 +107,7 @@ public class FeedbackController {
             @Parameter(hidden = true) @AuthUser User admin,
             @Valid @RequestBody ModerationRequest dto
     ) throws IOException {
-        
+
         // 1. Validación de Rol
         if (admin.getRol() != UserRole.ADMIN) {
             throw new FeedbackNotAllowedException("No tienes permisos de administrador.");

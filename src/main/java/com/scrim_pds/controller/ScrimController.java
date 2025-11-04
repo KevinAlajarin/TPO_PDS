@@ -44,6 +44,9 @@ import java.util.Optional;
 import com.scrim_pds.dto.MyScrimResponse; // <-- AÑADIR IMPORT
 // --- AÑADIR IMPORT ---
 import com.scrim_pds.dto.EstadisticaResponse;
+import com.scrim_pds.model.User;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/scrims")
@@ -404,6 +407,34 @@ public class ScrimController {
     }
     // --- FIN DE NUEVOS ENDPOINTS ---
 
+    // --- INICIO: NUEVO ENDPOINT PARA OBTENER PARTICIPANTES ---
+    @Operation(summary = "Obtener todos los participantes de un scrim (Organizador + Aceptados)", security = @SecurityRequirement(name = "bearerAuth"))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de participantes",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "array", implementation = User.class))),
+            @ApiResponse(responseCode = "401", description = "Token inválido o faltante"),
+            @ApiResponse(responseCode = "404", description = "Scrim no encontrado")
+    })
+    @GetMapping("/{id}/participants") // <-- Esta es la ruta que llama el frontend
+    public ResponseEntity<List<User>> getParticipants(
+            @Parameter(description = "ID del scrim") @PathVariable("id") UUID scrimId,
+            @Parameter(hidden = true) @AuthUser User authenticatedUser // Asegura que el usuario esté logueado
+    ) throws IOException {
+
+        // 1. Obtener el scrim para saber quién es el organizador
+        Scrim scrim = scrimService.findScrimById(scrimId);
+
+        // 2. Llamar al método del servicio que ya existe
+        List<User> participants = scrimService.findParticipantsForScrim(scrimId, scrim.getOrganizadorId());
+
+        // 3. (IMPORTANTE) Ocultar el passwordHash antes de devolver
+        // (Tu frontend no lo necesita y es un riesgo de seguridad enviarlo)
+        participants.forEach(user -> user.setPasswordHash(null));
+
+        return ResponseEntity.ok(participants);
+    }
+    // --- FIN: NUEVO ENDPOINT PARA OBTENER PARTICIPANTES ---
 
 }
 

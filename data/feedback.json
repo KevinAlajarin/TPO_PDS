@@ -16,4 +16,13 @@
   "comment" : "Mal desempeño",
   "moderationState" : "APROBADO",
   "createdAt" : "2025-11-04T10:43:46.9366356"
+}, {
+  "id" : "44aae995-5575-4117-aecf-452135a08b3a",
+  "scrimId" : "a24d1825-eb9c-42ac-8c29-0cf8f638861f",
+  "reviewerId" : "53292e39-d4f5-4ed2-8d63-f40aeac34732",
+  "targetUserId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "rating" : 5,
+  "comment" : "muy bueno",
+  "moderationState" : "APROBADO",
+  "createdAt" : "2025-11-04T12:04:13.0213942"
 } ]
