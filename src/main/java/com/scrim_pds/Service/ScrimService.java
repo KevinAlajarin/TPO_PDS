@@ -46,6 +46,7 @@ import com.scrim_pds.model.enums.PostulacionState;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.Comparator;
+import com.scrim_pds.dto.EstadisticaResponse; // <-- IMPORTAR NUEVO DTO
 
 @Service
 public class ScrimService {
@@ -95,7 +96,7 @@ public class ScrimService {
 
         // --- LOG DE AUDITORIA ---
         logger.info("[AUDIT] Usuario '{}' (ID: {}) creó Scrim '{}'", organizador.getUsername(), organizador.getId(), newScrim.getId());
-        
+
         eventBus.publish(new ScrimCreatedEvent(newScrim));
         logger.info("Evento ScrimCreatedEvent publicado para Scrim {}.", newScrim.getId()); // Log de evento
 
@@ -156,7 +157,7 @@ public class ScrimService {
             String rangoMaxFilter = rangoMax.get();
             stream = stream.filter(s -> s.getRangoMax() != null && s.getRangoMax().equalsIgnoreCase(rangoMaxFilter));
         }
-        
+
         // --- NUEVOS FILTROS ---
         if (formato.isPresent()) {
             Formato formatoFilter = formato.get();
@@ -165,7 +166,7 @@ public class ScrimService {
         if (fecha.isPresent()) {
             LocalDate fechaFilter = fecha.get();
             stream = stream.filter(s -> s.getFechaHora() != null &&
-                                        s.getFechaHora().toLocalDate().isEqual(fechaFilter));
+                    s.getFechaHora().toLocalDate().isEqual(fechaFilter));
         }
         // --- FIN NUEVOS FILTROS ---
 
@@ -188,7 +189,7 @@ public class ScrimService {
         boolean yaPostulado = postulaciones.stream().anyMatch(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId()));
         if (yaPostulado) { /* ... */ throw new InvalidScrimStateException("Ya te has postulado..."); }
         if (scrim.getOrganizadorId().equals(jugador.getId())) { /* ... */ throw new InvalidScrimStateException("No te puedes postular..."); }
-        
+
         Postulacion newPostulacion = new Postulacion();
         // ... (setear campos postulación) ...
         newPostulacion.setId(UUID.randomUUID());
@@ -198,28 +199,14 @@ public class ScrimService {
         newPostulacion.setLatenciaReportada(dto.getLatenciaReportada());
         newPostulacion.setFechaPostulacion(LocalDateTime.now());
         newPostulacion.setEstado(PostulacionState.PENDIENTE);
-        
+
         postulaciones.add(newPostulacion);
-        
-        long postulantesActivos = postulaciones.stream()
-                .filter(p -> p.getScrimId().equals(scrimId) && (p.getEstado() == PostulacionState.PENDIENTE || p.getEstado() == PostulacionState.ACEPTADA))
-                .count();
-        boolean cupoLleno = (scrim.getCupo() != null) && (postulantesActivos >= scrim.getCupo()); // sin +1
-        
+
         persistenceManager.writeCollection(POSTULACIONES_FILE, postulaciones);
         logger.info("[EVENTO] Nueva postulación para Scrim {} por {}", scrim.getId(), jugador.getUsername());
-        
-        if (cupoLleno && scrim.getEstado() == ScrimStateEnum.BUSCANDO) {
-            logger.info("[INFO] Cupo lleno para Scrim {}. Cambiando estado y publicando evento.", scrim.getId());
-            scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO);
-            try {
-                persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
-                logger.info("[EVENTO] Scrim cambió a LOBBY_ARMADO (Cupo Lleno): {}", scrim.getId());
-                eventBus.publish(new LobbyArmadoEvent(scrim));
-                logger.info("Evento LobbyArmadoEvent publicado para Scrim {}", scrim.getId());
-            } catch (IOException e) { /* ... */ scrim.setEstado(ScrimStateEnum.BUSCANDO); throw e; }
-              catch (Exception e) { /* ... */ }
-        }
+
+        // --- ESTE BLOQUE FUE ELIMINADO EN PASOS ANTERIORES (BUG FIX) ---
+
         return newPostulacion;
     }
 
@@ -255,13 +242,22 @@ public class ScrimService {
         }
 
         // ¿Todos los aceptados confirmaron?
+        long aceptadas = all.stream()
+                .filter(p -> p.getScrimId().equals(scrimId))
+                .filter(p -> p.getEstado() == PostulacionState.ACEPTADA)
+                .count();
+
         long aceptadasYConfirmadas = all.stream()
                 .filter(p -> p.getScrimId().equals(scrimId))
                 .filter(p -> p.getEstado() == PostulacionState.ACEPTADA && p.getHasConfirmed())
                 .count();
 
-        Integer cupo = scrim.getCupo();
-        boolean todosConfirmados = (cupo != null) && (aceptadasYConfirmadas >= cupo); // sin +1
+        //Integer cupo = scrim.getCupo(); // Cupo es adicional al owner
+        //boolean todosConfirmados = (cupo != null) && (aceptadasYConfirmadas >= cupo);
+
+        // CORRECCIÓN LÓGICA: Todos los ACEPTADOS deben confirmar (no solo el cupo)
+        boolean todosConfirmados = (aceptadas > 0 && aceptadas == aceptadasYConfirmadas);
+
 
         if (todosConfirmados && scrim.getEstado() == ScrimStateEnum.LOBBY_ARMADO) {
             scrim.setEstado(ScrimStateEnum.CONFIRMADO);
@@ -274,17 +270,17 @@ public class ScrimService {
 
 
     /**
-     * Inicia manualmente un Scrim y PUBLICA ScrimIniciadoEvent.
+     * Inicia manually un Scrim y PUBLICA ScrimIniciadoEvent.
      */
     public void iniciarScrim(UUID scrimId, @Nullable User actor) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
-         
+
         if (scrimOpt.isEmpty()) {
-             if (actor != null) { throw new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId); }
-             logger.warn("[Scheduler] Scrim {} no encontrado para iniciar (¿ya fue borrado?).", scrimId);
-             return;
-         }
+            if (actor != null) { throw new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId); }
+            logger.warn("[Scheduler] Scrim {} no encontrado para iniciar (¿ya fue borrado?).", scrimId);
+            return;
+        }
         Scrim scrim = scrimOpt.get();
         if (actor != null && !scrim.getOrganizadorId().equals(actor.getId())) {
             throw new UnauthorizedException("Solo el organizador puede iniciar el scrim.");
@@ -293,7 +289,7 @@ public class ScrimService {
             String actorName = actor != null ? actor.getUsername() : "Scheduler";
             logger.debug("[{}] Scrim {} ya no está CONFIRMADO (Estado: {}). Omitiendo inicio.", actorName, scrimId, scrim.getEstado());
             if (actor != null) {
-                 throw new InvalidScrimStateException("Solo se puede iniciar un scrim que esté 'Confirmado' (Estado: " + scrim.getEstado() + ").");
+                throw new InvalidScrimStateException("Solo se puede iniciar un scrim que esté 'Confirmado' (Estado: " + scrim.getEstado() + ").");
             }
             return;
         }
@@ -307,7 +303,7 @@ public class ScrimService {
             eventBus.publish(new ScrimIniciadoEvent(scrim));
             logger.info("Evento ScrimIniciadoEvent publicado para Scrim {}", scrim.getId());
         } catch (IOException e) { /* ... */ scrim.setEstado(estadoAnterior); throw e; }
-          catch (Exception e) { /* ... */ }
+        catch (Exception e) { /* ... */ }
     }
 
 
@@ -317,37 +313,37 @@ public class ScrimService {
     public void cancelarScrim(UUID scrimId, User organizador) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
-         if (scrimOpt.isEmpty()) { /* ... */ throw new ScrimNotFoundException("No se encontró el Scrim..."); }
+        if (scrimOpt.isEmpty()) { /* ... */ throw new ScrimNotFoundException("No se encontró el Scrim..."); }
         Scrim scrim = scrimOpt.get();
         if (!scrim.getOrganizadorId().equals(organizador.getId())) { /* ... */ throw new UnauthorizedException("Solo el organizador..."); }
         if (scrim.getEstado() == ScrimStateEnum.EN_JUEGO ||
-            scrim.getEstado() == ScrimStateEnum.FINALIZADO ||
-            scrim.getEstado() == ScrimStateEnum.CANCELADO) {
+                scrim.getEstado() == ScrimStateEnum.FINALIZADO ||
+                scrim.getEstado() == ScrimStateEnum.CANCELADO) {
             throw new InvalidScrimStateException("No se puede cancelar un scrim en este estado...");
         }
 
         ScrimStateEnum estadoAnterior = scrim.getEstado();
         scrim.setEstado(ScrimStateEnum.CANCELADO);
         try {
-             persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
-             logger.info("[AUDIT] Usuario '{}' (ID: {}) canceló Scrim '{}'", organizador.getUsername(), organizador.getId(), scrim.getId());
-             eventBus.publish(new ScrimCanceladoEvent(scrim));
-             logger.info("Evento ScrimCanceladoEvent publicado para Scrim {}", scrim.getId());
+            persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
+            logger.info("[AUDIT] Usuario '{}' (ID: {}) canceló Scrim '{}'", organizador.getUsername(), organizador.getId(), scrim.getId());
+            eventBus.publish(new ScrimCanceladoEvent(scrim));
+            logger.info("Evento ScrimCanceladoEvent publicado para Scrim {}", scrim.getId());
         } catch (IOException e) { /* ... */ scrim.setEstado(estadoAnterior); throw e; }
-          catch (Exception e) { /* ... */ }
+        catch (Exception e) { /* ... */ }
     }
 
     /**
      * Finaliza un Scrim y PUBLICA ScrimFinalizadoEvent.
      */
     public void finalizarScrim(UUID scrimId, User organizador) throws IOException {
-         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
+        List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
-         if (scrimOpt.isEmpty()) { /* ... */ throw new ScrimNotFoundException("No se encontró el Scrim..."); }
+        if (scrimOpt.isEmpty()) { /* ... */ throw new ScrimNotFoundException("No se encontró el Scrim..."); }
         Scrim scrim = scrimOpt.get();
         if (!scrim.getOrganizadorId().equals(organizador.getId())) { /* ... */ throw new UnauthorizedException("Solo el organizador..."); }
         if (scrim.getEstado() != ScrimStateEnum.EN_JUEGO && scrim.getEstado() != ScrimStateEnum.CONFIRMADO) { /* ... */ throw new InvalidScrimStateException("Solo se puede finalizar...");}
-        
+
         ScrimStateEnum estadoAnterior = scrim.getEstado();
         scrim.setEstado(ScrimStateEnum.FINALIZADO);
         try {
@@ -356,7 +352,7 @@ public class ScrimService {
             eventBus.publish(new ScrimFinalizadoEvent(scrim));
             logger.info("Evento ScrimFinalizadoEvent publicado para Scrim {}", scrim.getId());
         } catch (IOException e) { /* ... */ scrim.setEstado(estadoAnterior); throw e; }
-          catch (Exception e) { /* ... */ }
+        catch (Exception e) { /* ... */ }
     }
 
     /**
@@ -373,16 +369,16 @@ public class ScrimService {
         List<Estadistica> allStats = persistenceManager.readCollection(ESTADISTICAS_FILE, Estadistica.class);
         boolean alreadyExists = allStats.stream().anyMatch(s -> s.getScrimId().equals(scrimId));
         if (alreadyExists) {
-             logger.warn("[WARN] Ya existen estadísticas para el Scrim: {}. No se guardarán de nuevo.", scrimId);
-             return;
+            logger.warn("[WARN] Ya existen estadísticas para el Scrim: {}. No se guardarán de nuevo.", scrimId);
+            return;
         }
 
         List<Estadistica> newStats = new ArrayList<>();
         for (EstadisticaRequest req : statsRequests) {
-             if (req.getUsuarioId() == null || req.getKills() == null || req.getDeaths() == null || req.getAssists() == null) {
-                 logger.warn("Se omitió una entrada de estadística para el scrim {} debido a campos nulos.", scrimId);
-                 continue;
-             }
+            if (req.getUsuarioId() == null || req.getKills() == null || req.getDeaths() == null || req.getAssists() == null) {
+                logger.warn("Se omitió una entrada de estadística para el scrim {} debido a campos nulos.", scrimId);
+                continue;
+            }
             Estadistica stat = new Estadistica();
             // ... (copiar datos) ...
             stat.setId(UUID.randomUUID());
@@ -399,23 +395,45 @@ public class ScrimService {
         if (!newStats.isEmpty()) {
             allStats.addAll(newStats);
             persistenceManager.writeCollection(ESTADISTICAS_FILE, allStats);
-            logger.info("[AUDIT] Usuario '{}' (ID: {}) guardó {} entradas de estadísticas para Scrim '{}'", 
-                        organizador.getUsername(), organizador.getId(), newStats.size(), scrimId);
+            logger.info("[AUDIT] Usuario '{}' (ID: {}) guardó {} entradas de estadísticas para Scrim '{}'",
+                    organizador.getUsername(), organizador.getId(), newStats.size(), scrimId);
         } else {
-             logger.warn("[WARN] No se guardaron estadísticas para Scrim {} (lista vacía o datos inválidos).", scrimId);
+            logger.warn("[WARN] No se guardaron estadísticas para Scrim {} (lista vacía o datos inválidos).", scrimId);
         }
     }
 
+    // --- NUEVO MÉTODO AÑADIDO ---
+    /**
+     * Obtiene las estadísticas de un Scrim, enriquecidas con el username.
+     * @param scrimId El ID del scrim.
+     * @return Lista de DTOs con estadísticas y usernames.
+     */
+    public List<EstadisticaResponse> getEstadisticasForScrim(UUID scrimId) throws IOException {
+        List<Estadistica> allStats = persistenceManager.readCollection(ESTADISTICAS_FILE, Estadistica.class);
+
+        return allStats.stream()
+                .filter(stat -> stat.getScrimId().equals(scrimId))
+                .map(stat -> {
+                    // Por cada estadística, buscamos el User para sacar el username
+                    User user = userService.findUserById(stat.getUsuarioId()).orElse(null);
+                    // Creamos el DTO de respuesta
+                    return new EstadisticaResponse(stat, user);
+                })
+                .sorted(Comparator.comparing(EstadisticaResponse::getKills).reversed()) // Ordenar por Kills desc
+                .collect(Collectors.toList());
+    }
+    // --- FIN DEL NUEVO MÉTODO ---
+
 
     // --- MÉTODOS DEL SCHEDULER ---
-    
+
     public List<Scrim> findScrimsToAutoStart() throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         LocalDateTime now = LocalDateTime.now();
         return currentScrims.stream()
                 .filter(s -> s.getEstado() == ScrimStateEnum.CONFIRMADO &&
-                             s.getFechaHora() != null &&
-                             s.getFechaHora().isBefore(now))
+                        s.getFechaHora() != null &&
+                        s.getFechaHora().isBefore(now))
                 .collect(Collectors.toList());
     }
 
@@ -430,10 +448,10 @@ public class ScrimService {
         LocalDateTime reminderWindowEnd = now.plusHours(soon_hours);
         return currentScrims.stream()
                 .filter(s -> s.getEstado() == ScrimStateEnum.CONFIRMADO &&
-                             !s.isRecordatorioEnviado() && // <-- Lógica corregida
-                             s.getFechaHora() != null &&
-                             s.getFechaHora().isAfter(now) &&
-                             s.getFechaHora().isBefore(reminderWindowEnd))
+                        !s.isRecordatorioEnviado() && // <-- Lógica corregida
+                        s.getFechaHora() != null &&
+                        s.getFechaHora().isAfter(now) &&
+                        s.getFechaHora().isBefore(reminderWindowEnd))
                 .collect(Collectors.toList());
     }
 
@@ -449,7 +467,7 @@ public class ScrimService {
                 .forEach(p -> userService.findUserById(p.getUsuarioId()).ifPresent(participants::add));
         return participants.stream().distinct().collect(Collectors.toList());
     }
-    
+
     /**
      * Marca un scrim como "recordatorio enviado" para evitar spam.
      * --- MÉTODO AÑADIDO ---
@@ -465,11 +483,11 @@ public class ScrimService {
                     persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
                     logger.info("[Scheduler] Flag 'recordatorioEnviado' seteado para Scrim {}", scrimId);
                 } catch (IOException e) {
-                     logger.error("[Scheduler] CRITICAL: Error al guardar flag de recordatorio para Scrim {}. Podrían enviarse duplicados.", scrimId, e);
-                     throw e;
+                    logger.error("[Scheduler] CRITICAL: Error al guardar flag de recordatorio para Scrim {}. Podrían enviarse duplicados.", scrimId, e);
+                    throw e;
                 }
             } else {
-                 logger.warn("[Scheduler] Scrim {} ya estaba marcado como 'recordatorioEnviado'. Omitiendo.", scrimId);
+                logger.warn("[Scheduler] Scrim {} ya estaba marcado como 'recordatorioEnviado'. Omitiendo.", scrimId);
             }
         } else {
             logger.warn("[Scheduler] No se pudo encontrar Scrim {} para marcar recordatorio (¿fue borrado?).", scrimId);
@@ -572,7 +590,7 @@ public class ScrimService {
      */
     private void checkAndProcessLobbyArmado(Scrim scrim) throws IOException {
         if (scrim.getEstado() != ScrimStateEnum.BUSCANDO) return;
-        Integer cupo = scrim.getCupo();
+        Integer cupo = scrim.getCupo(); // Cupo es "adicionales"
         if (cupo == null) return;
 
         List<Postulacion> all = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
@@ -581,7 +599,7 @@ public class ScrimService {
                 .filter(p -> p.getEstado() == PostulacionState.ACEPTADA)
                 .count();
 
-        if (aceptadas >= cupo) {
+        if (aceptadas >= cupo) { // Si aceptadas >= cupo de adicionales
             scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO);
             List<Scrim> current = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
             for (Scrim s : current) {
@@ -623,5 +641,3 @@ public class ScrimService {
 
 
 }
-
-

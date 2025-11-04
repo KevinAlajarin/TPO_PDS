@@ -100,4 +100,38 @@
   "cupo" : 2,
   "matchmakingStrategyType" : "BY_MMR",
   "recordatorioEnviado" : false
+}, {
+  "id" : "26c132a5-50f7-43d7-b890-f88fdc8a5790",
+  "juego" : "League of Legends",
+  "formato" : "FORMATO_1V1",
+  "region" : "LATAM",
+  "rangoMin" : "Oro",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-11-05T10:15:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "68283056-fb7b-4f9f-b48e-03f4458d99f9",
+  "estado" : "FINALIZADO",
+  "descripcion" : "",
+  "cupo" : 2,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
+}, {
+  "id" : "a24d1825-eb9c-42ac-8c29-0cf8f638861f",
+  "juego" : "Valorant",
+  "formato" : "FORMATO_1V1",
+  "region" : "LATAM",
+  "rangoMin" : "Oro",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-11-08T11:05:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "estado" : "FINALIZADO",
+  "descripcion" : "",
+  "cupo" : 1,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
 } ]

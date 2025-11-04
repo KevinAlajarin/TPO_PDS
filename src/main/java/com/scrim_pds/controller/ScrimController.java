@@ -13,12 +13,14 @@ import com.scrim_pds.model.User;
 import com.scrim_pds.service.ScrimService;
 import com.scrim_pds.config.AuthUser;
 import com.scrim_pds.model.User;
+// --- IMPORT FALTANTE ---
+import com.scrim_pds.model.enums.ScrimStateEnum;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders; // <-- AÑADIDO IMPORT
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.format.annotation.DateTimeFormat; 
+import org.springframework.format.annotation.DateTimeFormat;
 import com.scrim_pds.model.enums.Formato;
 
 // --- Swagger Imports ---
@@ -40,6 +42,8 @@ import java.util.UUID;
 import java.util.Collections;
 import java.util.Optional;
 import com.scrim_pds.dto.MyScrimResponse; // <-- AÑADIR IMPORT
+// --- AÑADIR IMPORT ---
+import com.scrim_pds.dto.EstadisticaResponse;
 
 @RestController
 @RequestMapping("/api/scrims")
@@ -58,23 +62,23 @@ public class ScrimController {
     @Operation(summary = "Listar scrims disponibles con filtros opcionales")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de scrims encontrados",
-                         content = @Content(mediaType = "application/json",
-                         schema = @Schema(type = "array", implementation = Scrim.class)))
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "array", implementation = Scrim.class)))
     })
     @GetMapping
     public ResponseEntity<List<Scrim>> getScrims(
             @Parameter(description = "Filtrar por nombre exacto del juego (ej. Valorant)", required = false)
             @RequestParam Optional<String> juego,
-            
+
             @Parameter(description = "Filtrar por región exacta (ej. LATAM)", required = false)
             @RequestParam Optional<String> region,
-            
+
             @Parameter(description = "Filtrar por rango mínimo exacto (ej. Oro)", required = false)
             @RequestParam Optional<String> rangoMin,
-            
+
             @Parameter(description = "Filtrar por rango máximo exacto (ej. Platino)", required = false)
             @RequestParam Optional<String> rangoMax,
-            
+
             @Parameter(description = "Filtrar por latencia máxima permitida (ej. 100)", required = false)
             @RequestParam Optional<Integer> latenciaMax,
 
@@ -85,19 +89,19 @@ public class ScrimController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Optional<LocalDate> fecha
 
     ) throws IOException {
-        
+
         List<Scrim> scrims = scrimService.findScrims(juego, region, rangoMin, rangoMax, latenciaMax, formato, fecha);
         return ResponseEntity.ok(scrims);
     }
-    
+
     // --- NUEVO ENDPOINT AÑADIDO ---
-    
+
     @Operation(summary = "Descargar archivo .ics (iCalendar) para un scrim")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Archivo .ics listo para descargar",
-                         // Especificar que devuelve 'text/calendar'
-                         content = @Content(mediaType = "text/calendar", 
-                         schema = @Schema(type = "string", example = "BEGIN:VCALENDAR..."))),
+                    // Especificar que devuelve 'text/calendar'
+                    content = @Content(mediaType = "text/calendar",
+                            schema = @Schema(type = "string", example = "BEGIN:VCALENDAR..."))),
             @ApiResponse(responseCode = "404", description = "Scrim no encontrado"),
             @ApiResponse(responseCode = "500", description = "Error al generar el archivo iCal")
     })
@@ -116,7 +120,7 @@ public class ScrimController {
         if (icalString == null) {
             // Si el adapter falló, devolver 500
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                                 .body("Error al generar el archivo iCal.");
+                    .body("Error al generar el archivo iCal.");
         }
 
         // 3. Preparar Headers para la descarga
@@ -132,8 +136,8 @@ public class ScrimController {
     @Operation(summary = "Crear un nuevo scrim", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Scrim creado exitosamente",
-                         content = @Content(mediaType = "application/json",
-                         schema = @Schema(implementation = Scrim.class))),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Scrim.class))),
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
             @ApiResponse(responseCode = "401", description = "Token inválido o faltante")
     })
@@ -150,8 +154,8 @@ public class ScrimController {
     @Operation(summary = "Postularse a un scrim existente", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Postulación creada exitosamente",
-                         content = @Content(mediaType = "application/json",
-                         schema = @Schema(implementation = Postulacion.class))),
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = Postulacion.class))),
             @ApiResponse(responseCode = "400", description = "Datos de entrada inválidos"),
             @ApiResponse(responseCode = "401", description = "Token inválido o faltante"),
             @ApiResponse(responseCode = "404", description = "Scrim no encontrado"),
@@ -247,11 +251,31 @@ public class ScrimController {
             @Parameter(hidden = true) @AuthUser User organizador
     ) throws IOException {
         if (estadisticas == null || estadisticas.isEmpty()) {
-             return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().build();
         }
         scrimService.guardarEstadisticas(scrimId, estadisticas, organizador);
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
+
+    // --- INICIO: NUEVO ENDPOINT AÑADIDO ---
+    @Operation(summary = "Obtener las estadísticas de un scrim finalizado")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Lista de estadísticas",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(type = "array", implementation = EstadisticaResponse.class))),
+            @ApiResponse(responseCode = "404", description = "Scrim no encontrado")
+    })
+    @GetMapping("/{id}/estadisticas")
+    public ResponseEntity<List<EstadisticaResponse>> getEstadisticas(
+            @Parameter(description = "ID del scrim") @PathVariable("id") UUID scrimId
+    ) throws IOException {
+        // Nota: Este endpoint es público, cualquiera puede ver los resultados
+        // de un scrim finalizado.
+        List<EstadisticaResponse> estadisticas = scrimService.getEstadisticasForScrim(scrimId);
+        return ResponseEntity.ok(estadisticas);
+    }
+    // --- FIN: NUEVO ENDPOINT AÑADIDO ---
+
 
     // --- AÑADIR ESTE NUEVO ENDPOINT ---
     @Operation(summary = "Listar los scrims del usuario (organizados y postulados)", security = @SecurityRequirement(name = "bearerAuth"))
@@ -319,24 +343,27 @@ public class ScrimController {
         // 2. Chequeamos si es el organizador
         boolean isOrganizador = scrim.getOrganizadorId().equals(authenticatedUser.getId());
 
-        if (isOrganizador) {
-            // El organizador ve la lista completa
-            return ResponseEntity.ok(postulaciones);
-        } else {
-            // Un jugador normal SOLO debe ver su propia postulación.
-            // Buscamos su postulación en la lista.
-            Optional<PostulacionResponse> myPostulacion = postulaciones.stream()
-                    .filter(p -> p.getUsuarioId().equals(authenticatedUser.getId()))
-                    .findFirst();
+        // --- INICIO DE LA MODIFICACIÓN (DE LA VEZ PASADA) ---
 
-            // Si la encontramos, devolvemos una lista con SÓLO ese item.
-            // Si no (porque no aplicó), devolvemos una lista vacía.
-            if (myPostulacion.isPresent()) {
-                return ResponseEntity.ok(Collections.singletonList(myPostulacion.get()));
-            } else {
-                return ResponseEntity.ok(Collections.emptyList());
-            }
+        // 3. Si es el Owner, O si el Scrim está FINALIZADO, todos ven la lista completa
+        //    (para poder dejar feedback)
+        if (isOrganizador || scrim.getEstado() == ScrimStateEnum.FINALIZADO) {
+            return ResponseEntity.ok(postulaciones);
         }
+
+        // 4. Si no, es un jugador normal en un Scrim activo/pendiente.
+        //    Solo debe ver su propia postulación.
+        Optional<PostulacionResponse> myPostulacion = postulaciones.stream()
+                .filter(p -> p.getUsuarioId().equals(authenticatedUser.getId()))
+                .findFirst();
+
+        if (myPostulacion.isPresent()) {
+            return ResponseEntity.ok(Collections.singletonList(myPostulacion.get()));
+        } else {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+
+        // --- FIN DE LA MODIFICACIÓN ---
     }
 
     // --- 6. AÑADIR NUEVOS ENDPOINTS ---

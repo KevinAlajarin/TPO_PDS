@@ -1,1 +1,19 @@
-[ ]
+[ {
+  "id" : "475c7968-ed53-42d1-8747-c5a071504621",
+  "scrimId" : "26c132a5-50f7-43d7-b890-f88fdc8a5790",
+  "usuarioId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "mvp" : false,
+  "kills" : 2,
+  "deaths" : 1,
+  "assists" : 0,
+  "observaciones" : "muy bueno"
+}, {
+  "id" : "d7c1724c-a98e-47d4-9130-4929bdc955d6",
+  "scrimId" : "26c132a5-50f7-43d7-b890-f88fdc8a5790",
+  "usuarioId" : "53292e39-d4f5-4ed2-8d63-f40aeac34732",
+  "mvp" : false,
+  "kills" : 0,
+  "deaths" : 0,
+  "assists" : 0,
+  "observaciones" : "flojo"
+} ]

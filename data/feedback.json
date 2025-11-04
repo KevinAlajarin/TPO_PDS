@@ -7,4 +7,13 @@
   "comment" : "Buen jugador.",
   "moderationState" : "APROBADO",
   "createdAt" : "2025-10-31T17:50:13.5808813"
+}, {
+  "id" : "f7fa4ce4-60f2-43f6-8746-880946ee0981",
+  "scrimId" : "26c132a5-50f7-43d7-b890-f88fdc8a5790",
+  "reviewerId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "targetUserId" : "53292e39-d4f5-4ed2-8d63-f40aeac34732",
+  "rating" : 2,
+  "comment" : "Mal desempeño",
+  "moderationState" : "APROBADO",
+  "createdAt" : "2025-11-04T10:43:46.9366356"
 } ]
