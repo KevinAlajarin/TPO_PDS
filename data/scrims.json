@@ -134,4 +134,38 @@
   "cupo" : 1,
   "matchmakingStrategyType" : "BY_MMR",
   "recordatorioEnviado" : false
+}, {
+  "id" : "792cca52-609f-4761-802f-741dad61015e",
+  "juego" : "CS2",
+  "formato" : "FORMATO_5V5",
+  "region" : "LATAM",
+  "rangoMin" : "Oro",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-11-10T12:26:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "8b5d8733-fa76-4b66-9ca1-1f3700e37bae",
+  "estado" : "CANCELADO",
+  "descripcion" : "test",
+  "cupo" : 1,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
+}, {
+  "id" : "92b473d1-669a-40e9-9f11-77104fb8acfd",
+  "juego" : "Valorant",
+  "formato" : "FORMATO_1V1",
+  "region" : "LATAM",
+  "rangoMin" : "Oro",
+  "rangoMax" : "Platino",
+  "latenciaMax" : 100,
+  "fechaHora" : "2025-11-20T12:28:00",
+  "duracion" : 60,
+  "modalidad" : "RANKED",
+  "organizadorId" : "0c1b10f0-e8ef-4961-bfef-4a4fec3412fa",
+  "estado" : "FINALIZADO",
+  "descripcion" : "test 2",
+  "cupo" : 1,
+  "matchmakingStrategyType" : "BY_MMR",
+  "recordatorioEnviado" : false
 } ]

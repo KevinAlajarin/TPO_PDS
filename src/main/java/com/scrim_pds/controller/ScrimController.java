@@ -407,34 +407,39 @@ public class ScrimController {
     }
     // --- FIN DE NUEVOS ENDPOINTS ---
 
-    // --- INICIO: NUEVO ENDPOINT PARA OBTENER PARTICIPANTES ---
+    // --- AÑADIR ESTE ENDPOINT ---
     @Operation(summary = "Obtener todos los participantes de un scrim (Organizador + Aceptados)", security = @SecurityRequirement(name = "bearerAuth"))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Lista de participantes",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(type = "array", implementation = User.class))),
-            @ApiResponse(responseCode = "401", description = "Token inválido o faltante"),
+            @ApiResponse(responseCode = "401", description = "No autorizado"),
             @ApiResponse(responseCode = "404", description = "Scrim no encontrado")
     })
-    @GetMapping("/{id}/participants") // <-- Esta es la ruta que llama el frontend
+    @GetMapping("/{id}/participants")
     public ResponseEntity<List<User>> getParticipants(
             @Parameter(description = "ID del scrim") @PathVariable("id") UUID scrimId,
-            @Parameter(hidden = true) @AuthUser User authenticatedUser // Asegura que el usuario esté logueado
-    ) throws IOException {
+            @Parameter(hidden = true) @AuthUser User authenticatedUser) throws IOException {
 
-        // 1. Obtener el scrim para saber quién es el organizador
+        // 1. Validar que el scrim exista
         Scrim scrim = scrimService.findScrimById(scrimId);
 
-        // 2. Llamar al método del servicio que ya existe
-        List<User> participants = scrimService.findParticipantsForScrim(scrimId, scrim.getOrganizadorId());
+        // 2. Seguridad: Solo el organizador puede ver la lista para cargar stats
+        //    (O puedes dejarlo público si lo prefieres)
+        if (!scrim.getOrganizadorId().equals(authenticatedUser.getId())) {
+            throw new UnauthorizedException("Solo el organizador puede ver la lista de participantes.");
+        }
 
-        // 3. (IMPORTANTE) Ocultar el passwordHash antes de devolver
-        // (Tu frontend no lo necesita y es un riesgo de seguridad enviarlo)
+        // 3. Usar el método de servicio que ya tienes
+        List<User> participants = scrimService.findParticipantsForScrim(scrim.getId(), scrim.getOrganizadorId());
+
+        // Ocultar datos sensibles antes de enviar
         participants.forEach(user -> user.setPasswordHash(null));
 
         return ResponseEntity.ok(participants);
     }
-    // --- FIN: NUEVO ENDPOINT PARA OBTENER PARTICIPANTES ---
+
+
 
 }
 

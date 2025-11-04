@@ -111,4 +111,48 @@
   "strikes" : 0,
   "cooldownHasta" : null,
   "estadoVerificacion" : "PENDIENTE"
+}, {
+  "id" : "0c1b10f0-e8ef-4961-bfef-4a4fec3412fa",
+  "username" : "mati amistadi",
+  "email" : "matias.amistadi@gmail.com",
+  "passwordHash" : "$2a$10$x78YGslHc8uZFQCzHmjA5.w/0vz1QndDVk4CWAd6SV/pxajzZJJEO",
+  "rangoPorJuego" : null,
+  "rolesPreferidos" : null,
+  "region" : null,
+  "preferencias" : {
+    "canalesNotificacion" : [ "EMAIL" ],
+    "alertasScrim" : true,
+    "alertasPostulacion" : true,
+    "recordatoriosActivos" : true,
+    "busquedaJuegoPorDefecto" : "Valorant",
+    "busquedaRegionPorDefecto" : "LATAM",
+    "busquedaRangoMinPorDefecto" : "Oro",
+    "busquedaRangoMaxPorDefecto" : "Diamante"
+  },
+  "rol" : "USER",
+  "strikes" : 0,
+  "cooldownHasta" : null,
+  "estadoVerificacion" : "PENDIENTE"
+}, {
+  "id" : "8b5d8733-fa76-4b66-9ca1-1f3700e37bae",
+  "username" : "franco vasquez",
+  "email" : "francovasquez632@gmail.com",
+  "passwordHash" : "$2a$10$mBNm2yiISENzU/eVNCuoA.Fb36PFzKQcffln61HSnjs/YF7XoWZde",
+  "rangoPorJuego" : null,
+  "rolesPreferidos" : null,
+  "region" : null,
+  "preferencias" : {
+    "canalesNotificacion" : [ "EMAIL" ],
+    "alertasScrim" : true,
+    "alertasPostulacion" : true,
+    "recordatoriosActivos" : true,
+    "busquedaJuegoPorDefecto" : "Valorant",
+    "busquedaRegionPorDefecto" : "LATAM",
+    "busquedaRangoMinPorDefecto" : "Oro",
+    "busquedaRangoMaxPorDefecto" : "Diamante"
+  },
+  "rol" : "USER",
+  "strikes" : 0,
+  "cooldownHasta" : null,
+  "estadoVerificacion" : "PENDIENTE"
 } ]
