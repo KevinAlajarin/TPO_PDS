@@ -22,4 +22,28 @@
   "estado" : "ACEPTADA",
   "latenciaReportada" : 50,
   "fechaPostulacion" : "2025-11-02T15:29:55.7166792"
+}, {
+  "id" : "d7327e0f-1bb5-4bdd-a357-0477832facfa",
+  "usuarioId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "scrimId" : "2eab50e2-106a-4969-83ba-980e72016be7",
+  "rolDeseado" : "Jugador",
+  "estado" : "ACEPTADA",
+  "latenciaReportada" : 50,
+  "fechaPostulacion" : "2025-11-03T19:59:16.7900645"
+}, {
+  "id" : "e9a87cd8-b2f1-46bb-b89c-88d92deee466",
+  "usuarioId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "scrimId" : "ca53bec6-5ed9-49fd-bd88-19dfa41aeda3",
+  "rolDeseado" : "Jugador",
+  "estado" : "ACEPTADA",
+  "latenciaReportada" : 50,
+  "fechaPostulacion" : "2025-11-03T20:17:54.4404216"
+}, {
+  "id" : "831dc9b3-ea7c-498f-b86f-f2b2538cca76",
+  "usuarioId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "scrimId" : "ca5e3485-d2b1-442f-993d-47bbdf3bf7a4",
+  "rolDeseado" : "Jugador",
+  "estado" : "PENDIENTE",
+  "latenciaReportada" : 50,
+  "fechaPostulacion" : "2025-11-03T20:19:33.9663433"
 } ]

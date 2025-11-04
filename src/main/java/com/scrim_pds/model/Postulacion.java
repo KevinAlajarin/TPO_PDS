@@ -9,15 +9,19 @@ public class Postulacion {
     private UUID id;
     private UUID usuarioId;
     private UUID scrimId;
-    private String rolDeseado; 
-    private PostulacionState estado; 
+    private String rolDeseado;
+    private PostulacionState estado;
     private int latenciaReportada;
     private LocalDateTime fechaPostulacion;
 
+    // --- 1. AÑADIR ESTE CAMPO ---
+    private boolean hasConfirmed;
+
     // Constructor
     public Postulacion() {
+        this.hasConfirmed = false; // <-- 2. INICIALIZAR EN FALSE
     }
-    
+
     // Getters y Setters
     public UUID getId() {
         return id;
@@ -74,4 +78,14 @@ public class Postulacion {
     public void setFechaPostulacion(LocalDateTime fechaPostulacion) {
         this.fechaPostulacion = fechaPostulacion;
     }
+
+    // --- 3. AÑADIR ESTOS MÉTODOS ---
+    public boolean getHasConfirmed() {
+        return hasConfirmed;
+    }
+
+    public void setHasConfirmed(boolean hasConfirmed) {
+        this.hasConfirmed = hasConfirmed;
+    }
+    // --- FIN DE LOS CAMBIOS ---
 }

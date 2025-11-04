@@ -178,6 +178,7 @@ public class ScrimService {
      * Permite a un usuario postularse a un Scrim y PUBLICA LobbyArmadoEvent si se llena.
      */
     public Postulacion postularse(UUID scrimId, PostulacionRequest dto, User jugador) throws IOException {
+
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
         Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
         if (scrimOpt.isEmpty()) { /* ... */ throw new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId); }
@@ -203,7 +204,7 @@ public class ScrimService {
         long postulantesActivos = postulaciones.stream()
                 .filter(p -> p.getScrimId().equals(scrimId) && (p.getEstado() == PostulacionState.PENDIENTE || p.getEstado() == PostulacionState.ACEPTADA))
                 .count();
-        boolean cupoLleno = (scrim.getCupo() != null) && (postulantesActivos + 1) >= scrim.getCupo();
+        boolean cupoLleno = (scrim.getCupo() != null) && (postulantesActivos >= scrim.getCupo()); // sin +1
         
         persistenceManager.writeCollection(POSTULACIONES_FILE, postulaciones);
         logger.info("[EVENTO] Nueva postulación para Scrim {} por {}", scrim.getId(), jugador.getUsername());
@@ -228,42 +229,48 @@ public class ScrimService {
      */
     public void confirmar(UUID scrimId, User jugador) throws IOException {
         List<Scrim> currentScrims = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
-        Optional<Scrim> scrimOpt = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst();
-        if (scrimOpt.isEmpty()) { /* ... */ throw new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId); }
-        Scrim scrim = scrimOpt.get();
-        if (scrim.getEstado() != ScrimStateEnum.LOBBY_ARMADO) { /* ... */ throw new InvalidScrimStateException("No se puede confirmar..."); }
-        
-        List<Postulacion> currentPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
-        Optional<Postulacion> postulacionOpt = currentPostulaciones.stream().filter(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId())).findFirst();
-        if (postulacionOpt.isEmpty()) { /* ... */ throw new InvalidScrimStateException("No se encontró tu postulación..."); }
-        Postulacion postulacion = postulacionOpt.get();
-        if (postulacion.getEstado() == PostulacionState.RECHAZADA) { /* ... */ throw new InvalidScrimStateException("Tu postulación fue rechazada..."); }
-        
-        boolean wasAlreadyAccepted = postulacion.getEstado() == PostulacionState.ACEPTADA;
-        if (!wasAlreadyAccepted) {
-            postulacion.setEstado(PostulacionState.ACEPTADA);
-            persistenceManager.writeCollection(POSTULACIONES_FILE, currentPostulaciones);
-            logger.info("[EVENTO] Jugador {} confirmó (Postulación ACEPTADA) para Scrim {}", jugador.getUsername(), scrimId);
-        } else {
-             logger.info("Jugador {} ya había confirmado para Scrim {}", jugador.getUsername(), scrimId);
+        Scrim scrim = currentScrims.stream().filter(s -> s.getId().equals(scrimId)).findFirst()
+                .orElseThrow(() -> new ScrimNotFoundException("No se encontró el Scrim con ID: " + scrimId));
+
+        if (scrim.getEstado() != ScrimStateEnum.LOBBY_ARMADO) {
+            throw new InvalidScrimStateException("Solo se puede confirmar en estado LOBBY_ARMADO.");
         }
 
-        long aceptados = currentPostulaciones.stream().filter(p -> p.getScrimId().equals(scrimId) && p.getEstado() == PostulacionState.ACEPTADA).count();
-        boolean todosConfirmados = (scrim.getCupo() != null) && (aceptados + 1) >= scrim.getCupo();
+        List<Postulacion> all = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+        Postulacion myPost = all.stream()
+                .filter(p -> p.getScrimId().equals(scrimId) && p.getUsuarioId().equals(jugador.getId()))
+                .findFirst()
+                .orElseThrow(() -> new InvalidScrimStateException("No se encontró tu postulación para este scrim."));
+
+        if (myPost.getEstado() != PostulacionState.ACEPTADA) {
+            throw new InvalidScrimStateException("Solo pueden confirmar quienes fueron ACEPTADOS por el organizador.");
+        }
+
+        if (!myPost.getHasConfirmed()) {
+            myPost.setHasConfirmed(true);                     // <-- marcar confirmación del jugador
+            persistenceManager.writeCollection(POSTULACIONES_FILE, all);
+            logger.info("[EVENTO] Jugador {} confirmó asistencia (hasConfirmed=true) para Scrim {}", jugador.getUsername(), scrimId);
+        } else {
+            logger.info("Jugador {} ya había confirmado para Scrim {}", jugador.getUsername(), scrimId);
+        }
+
+        // ¿Todos los aceptados confirmaron?
+        long aceptadasYConfirmadas = all.stream()
+                .filter(p -> p.getScrimId().equals(scrimId))
+                .filter(p -> p.getEstado() == PostulacionState.ACEPTADA && p.getHasConfirmed())
+                .count();
+
+        Integer cupo = scrim.getCupo();
+        boolean todosConfirmados = (cupo != null) && (aceptadasYConfirmadas >= cupo); // sin +1
 
         if (todosConfirmados && scrim.getEstado() == ScrimStateEnum.LOBBY_ARMADO) {
             scrim.setEstado(ScrimStateEnum.CONFIRMADO);
-            try {
-                persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
-                logger.info("[EVENTO] ¡Todos confirmaron! Scrim cambió a CONFIRMADO: {}", scrim.getId());
-                eventBus.publish(new ScrimConfirmadoEvent(scrim));
-                logger.info("Evento ScrimConfirmadoEvent publicado para Scrim {}", scrim.getId());
-            } catch (IOException e) { /* ... */ scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO); throw e; }
-              catch (Exception e) { /* ... */ }
-        } else if (!wasAlreadyAccepted) {
-            logger.info("Aún faltan confirmaciones para Scrim {}. Aceptados: {}/{}", scrimId, aceptados, (scrim.getCupo() != null ? scrim.getCupo() - 1 : "?"));
+            persistenceManager.writeCollection(SCRIMS_FILE, currentScrims);
+            eventBus.publish(new ScrimConfirmadoEvent(scrim));
+            logger.info("Scrim {} cambió a CONFIRMADO (todos los aceptados confirmaron).", scrim.getId());
         }
     }
+
 
 
     /**
@@ -536,32 +543,56 @@ public class ScrimService {
      * @param organizador El usuario (autenticado) que realiza la acción
      */
     public void aceptarPostulacion(UUID scrimId, UUID postulacionId, User organizador) throws IOException {
-        Scrim scrim = findScrimById(scrimId); // Lanza ScrimNotFoundException si no existe
-
-        // Seguridad: Solo el organizador puede aceptar
+        Scrim scrim = findScrimById(scrimId);
         if (!scrim.getOrganizadorId().equals(organizador.getId())) {
             throw new UnauthorizedException("Solo el organizador puede aceptar postulaciones.");
         }
 
-        // Lógica
-        List<Postulacion> allPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
-
-        Optional<Postulacion> postulacionOpt = allPostulaciones.stream()
+        List<Postulacion> all = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+        Postulacion post = all.stream()
                 .filter(p -> p.getId().equals(postulacionId) && p.getScrimId().equals(scrimId))
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() -> new ScrimNotFoundException("Postulación no encontrada."));
 
-        if (postulacionOpt.isEmpty()) {
-            throw new ScrimNotFoundException("Postulación no encontrada.");
-        }
+        post.setEstado(PostulacionState.ACEPTADA);
+        post.setHasConfirmed(false);        // <-- importante
 
-        Postulacion postulacion = postulacionOpt.get();
-        postulacion.setEstado(PostulacionState.ACEPTADA); // Cambiar estado
-
-        persistenceManager.writeCollection(POSTULACIONES_FILE, allPostulaciones);
+        persistenceManager.writeCollection(POSTULACIONES_FILE, all);
         logger.info("[AUDIT] Organizador {} aceptó postulación {}", organizador.getId(), postulacionId);
 
-        // TODO: Aquí se podría checkear si el lobby se llenó y publicar un Evento
+        // Regla: LOBBY_ARMADO se alcanza cuando hay suficientes ACEPTADAS (sin confirmar).
+        this.checkAndProcessLobbyArmado(scrim);
     }
+
+    // --- 1. PEGA ESTE MÉTODO COMPLETO (basado en tu ScrimMatchingSubscriber) ---
+    /**
+     * Revisa si un scrim llenó su cupo de aceptados y, si es así,
+     * cambia su estado a LOBBY_ARMADO y notifica.
+     * @param scrim El scrim a revisar.
+     */
+    private void checkAndProcessLobbyArmado(Scrim scrim) throws IOException {
+        if (scrim.getEstado() != ScrimStateEnum.BUSCANDO) return;
+        Integer cupo = scrim.getCupo();
+        if (cupo == null) return;
+
+        List<Postulacion> all = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+        long aceptadas = all.stream()
+                .filter(p -> p.getScrimId().equals(scrim.getId()))
+                .filter(p -> p.getEstado() == PostulacionState.ACEPTADA)
+                .count();
+
+        if (aceptadas >= cupo) {
+            scrim.setEstado(ScrimStateEnum.LOBBY_ARMADO);
+            List<Scrim> current = persistenceManager.readCollection(SCRIMS_FILE, Scrim.class);
+            for (Scrim s : current) {
+                if (s.getId().equals(scrim.getId())) { s.setEstado(ScrimStateEnum.LOBBY_ARMADO); break; }
+            }
+            persistenceManager.writeCollection(SCRIMS_FILE, current);
+            eventBus.publish(new LobbyArmadoEvent(scrim));
+            logger.info("LobbyArmadoEvent publicado para {}", scrim.getId());
+        }
+    }
+
 
     /**
      * Rechaza la postulación de un jugador.
@@ -570,29 +601,27 @@ public class ScrimService {
      * @param organizador El usuario (autenticado) que realiza la acción
      */
     public void rechazarPostulacion(UUID scrimId, UUID postulacionId, User organizador) throws IOException {
-        Scrim scrim = findScrimById(scrimId); // Lanza ScrimNotFoundException si no existe
-
+        Scrim scrim = findScrimById(scrimId);
         if (!scrim.getOrganizadorId().equals(organizador.getId())) {
             throw new UnauthorizedException("Solo el organizador puede rechazar postulaciones.");
         }
 
-        List<Postulacion> allPostulaciones = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
-
-        Optional<Postulacion> postulacionOpt = allPostulaciones.stream()
+        List<Postulacion> all = persistenceManager.readCollection(POSTULACIONES_FILE, Postulacion.class);
+        Postulacion post = all.stream()
                 .filter(p -> p.getId().equals(postulacionId) && p.getScrimId().equals(scrimId))
-                .findFirst();
+                .findFirst()
+                .orElseThrow(() -> new ScrimNotFoundException("Postulación no encontrada."));
 
-        if (postulacionOpt.isEmpty()) {
-            throw new ScrimNotFoundException("Postulación no encontrada.");
-        }
+        post.setEstado(PostulacionState.RECHAZADA);
+        post.setHasConfirmed(false); // ← opcional pero recomendado
 
-        Postulacion postulacion = postulacionOpt.get();
-        postulacion.setEstado(PostulacionState.RECHAZADA); // Cambiar estado
-
-        persistenceManager.writeCollection(POSTULACIONES_FILE, allPostulaciones);
+        persistenceManager.writeCollection(POSTULACIONES_FILE, all);
         logger.info("[AUDIT] Organizador {} rechazó postulación {}", organizador.getId(), postulacionId);
     }
+
     // --- FIN DE NUEVOS MÉTODOS ---
+
+
 }
 
 

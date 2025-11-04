@@ -7,7 +7,6 @@ import com.scrim_pds.model.enums.PostulacionState;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-// Este DTO combina la Postulación con el Username del postulante
 public class PostulacionResponse {
 
     private UUID id;
@@ -17,9 +16,9 @@ public class PostulacionResponse {
     private PostulacionState estado;
     private int latenciaReportada;
     private LocalDateTime fechaPostulacion;
-    private String username; // <-- ¡El campo que queremos!
+    private String username;
+    private boolean hasConfirmed; // <-- 1. AÑADIR ESTE CAMPO
 
-    // Constructor que crea este DTO a partir de los dos objetos
     public PostulacionResponse(Postulacion postulacion, User user) {
         this.id = postulacion.getId();
         this.usuarioId = postulacion.getUsuarioId();
@@ -29,9 +28,10 @@ public class PostulacionResponse {
         this.latenciaReportada = postulacion.getLatenciaReportada();
         this.fechaPostulacion = postulacion.getFechaPostulacion();
         this.username = (user != null) ? user.getUsername() : "Usuario Desconocido";
+        this.hasConfirmed = postulacion.getHasConfirmed(); // <-- 2. ASIGNAR EL VALOR
     }
 
-    // Getters (necesarios para que Jackson lo convierta a JSON)
+    // Getters
     public UUID getId() { return id; }
     public UUID getUsuarioId() { return usuarioId; }
     public UUID getScrimId() { return scrimId; }
@@ -40,4 +40,5 @@ public class PostulacionResponse {
     public int getLatenciaReportada() { return latenciaReportada; }
     public LocalDateTime getFechaPostulacion() { return fechaPostulacion; }
     public String getUsername() { return username; }
+    public boolean isHasConfirmed() { return hasConfirmed; } // <-- 3. AÑADIR EL GETTER
 }
