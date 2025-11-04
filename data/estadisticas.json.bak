@@ -16,4 +16,40 @@
   "deaths" : 0,
   "assists" : 0,
   "observaciones" : "flojo"
+}, {
+  "id" : "f350707b-a72c-454f-b5d0-4818fbfed969",
+  "scrimId" : "a24d1825-eb9c-42ac-8c29-0cf8f638861f",
+  "usuarioId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
+  "mvp" : false,
+  "kills" : 6,
+  "deaths" : 0,
+  "assists" : 0,
+  "observaciones" : ""
+}, {
+  "id" : "66d6e377-4659-4f72-a55f-9c86c72a6021",
+  "scrimId" : "a24d1825-eb9c-42ac-8c29-0cf8f638861f",
+  "usuarioId" : "53292e39-d4f5-4ed2-8d63-f40aeac34732",
+  "mvp" : false,
+  "kills" : 0,
+  "deaths" : 2,
+  "assists" : 0,
+  "observaciones" : ""
+}, {
+  "id" : "1fd08088-1d04-495b-a4c5-f2241cf8cd83",
+  "scrimId" : "92b473d1-669a-40e9-9f11-77104fb8acfd",
+  "usuarioId" : "0c1b10f0-e8ef-4961-bfef-4a4fec3412fa",
+  "mvp" : true,
+  "kills" : 4,
+  "deaths" : 0,
+  "assists" : 1,
+  "observaciones" : "sobresalio"
+}, {
+  "id" : "0d84b1c2-624d-425d-9f4e-2da214a6e8a7",
+  "scrimId" : "92b473d1-669a-40e9-9f11-77104fb8acfd",
+  "usuarioId" : "8b5d8733-fa76-4b66-9ca1-1f3700e37bae",
+  "mvp" : false,
+  "kills" : 0,
+  "deaths" : 2,
+  "assists" : 0,
+  "observaciones" : ""
 } ]

@@ -23,6 +23,24 @@
   "targetUserId" : "55fc33c2-5c15-4a67-9516-83256c2440aa",
   "rating" : 5,
   "comment" : "muy bueno",
-  "moderationState" : "PENDIENTE",
+  "moderationState" : "APROBADO",
   "createdAt" : "2025-11-04T12:04:13.0213942"
+}, {
+  "id" : "41e2750f-68dc-4079-ae9d-2b376e983208",
+  "scrimId" : "92b473d1-669a-40e9-9f11-77104fb8acfd",
+  "reviewerId" : "8b5d8733-fa76-4b66-9ca1-1f3700e37bae",
+  "targetUserId" : "0c1b10f0-e8ef-4961-bfef-4a4fec3412fa",
+  "rating" : 5,
+  "comment" : "muy bueno",
+  "moderationState" : "APROBADO",
+  "createdAt" : "2025-11-04T13:49:30.2715444"
+}, {
+  "id" : "89a3ad15-d49c-4027-af8d-20b509894c43",
+  "scrimId" : "eabc7441-0ff2-4cd4-a175-cf74febd1399",
+  "reviewerId" : "67b24021-56c0-423b-809b-b1e627a8fd8e",
+  "targetUserId" : "0c1b10f0-e8ef-4961-bfef-4a4fec3412fa",
+  "rating" : 5,
+  "comment" : "muy bueno",
+  "moderationState" : "PENDIENTE",
+  "createdAt" : "2025-11-04T14:03:39.0041103"
 } ]

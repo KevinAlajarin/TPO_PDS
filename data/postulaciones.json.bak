@@ -87,5 +87,14 @@
   "estado" : "ACEPTADA",
   "latenciaReportada" : 50,
   "fechaPostulacion" : "2025-11-04T12:29:14.2270835",
-  "hasConfirmed" : false
+  "hasConfirmed" : true
+}, {
+  "id" : "1d091ef7-51f6-4f7b-959c-e5e770510914",
+  "usuarioId" : "67b24021-56c0-423b-809b-b1e627a8fd8e",
+  "scrimId" : "eabc7441-0ff2-4cd4-a175-cf74febd1399",
+  "rolDeseado" : "Jugador",
+  "estado" : "ACEPTADA",
+  "latenciaReportada" : 50,
+  "fechaPostulacion" : "2025-11-04T14:01:33.5854461",
+  "hasConfirmed" : true
 } ]

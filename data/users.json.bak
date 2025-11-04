@@ -133,4 +133,26 @@
   "strikes" : 0,
   "cooldownHasta" : null,
   "estadoVerificacion" : "PENDIENTE"
+}, {
+  "id" : "8b5d8733-fa76-4b66-9ca1-1f3700e37bae",
+  "username" : "franco vasquez",
+  "email" : "francovasquez632@gmail.com",
+  "passwordHash" : "$2a$10$mBNm2yiISENzU/eVNCuoA.Fb36PFzKQcffln61HSnjs/YF7XoWZde",
+  "rangoPorJuego" : null,
+  "rolesPreferidos" : null,
+  "region" : null,
+  "preferencias" : {
+    "canalesNotificacion" : [ "EMAIL" ],
+    "alertasScrim" : true,
+    "alertasPostulacion" : true,
+    "recordatoriosActivos" : true,
+    "busquedaJuegoPorDefecto" : "Valorant",
+    "busquedaRegionPorDefecto" : "LATAM",
+    "busquedaRangoMinPorDefecto" : "Oro",
+    "busquedaRangoMaxPorDefecto" : "Diamante"
+  },
+  "rol" : "USER",
+  "strikes" : 0,
+  "cooldownHasta" : null,
+  "estadoVerificacion" : "PENDIENTE"
 } ]
